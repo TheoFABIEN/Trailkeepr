@@ -37,11 +37,29 @@ function loadHikes() {
 
       L.marker([hike.lat, hike.lon])
       .addTo(hikesLayer)
-      .bindPopup(`<b>${hike.name}</b><br>${hike.notes}`);
-
+      .bindPopup(`
+        <b>${hike.name}</b><br>
+        ${hike.notes || ""}
+        <br><br>
+        <button onclick="deleteHike(${hike.id})">
+          Supprimer
+        </button>
+      `);
     });
 
   });
+}
+
+
+function deleteHike(id) {
+    if (!confirm("Delete this hike ?")) return;
+    fetch(`http://localhost:8000/hikes/${id}`, {method: "DELETE"})
+    .then(res => res.json())
+    .then(() => {
+        alert("Hike deleted");
+        loadHikes();
+    })
+    .catch(err => console.error(err));
 }
 
 
@@ -103,6 +121,7 @@ document.getElementById("startAdd").addEventListener("click", () => {
   }
 
   addingMode = true;
+    map.getContainer().style.cursor = "crosshair";
   alert("Click on the map to add new hike");
 
 });
@@ -149,7 +168,7 @@ map.on("click", function(e) {
     loadHikes();   // recharge les markers
 
     addingMode = false;
-
+    map.getContainer().style.cursor = ""; //cursor back to normal mode
   })
   .catch(err => {
     console.error("Erreur API", err);

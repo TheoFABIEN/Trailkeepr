@@ -102,6 +102,18 @@ def add_hike(spot: NewSpot):
     return {"status": "ok"}
 
 
+# DELETING HIKES
+@app.delete("/hikes/{hike_id}")
+def delete_hike(hike_id: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM hikes WHERE id = %s",
+                (hike_id,)
+            )
+    return {"status": "deleted"}
+
+
 # ADDING CLIMBING SPOTS FROM MAP INTERFACE
 
 @app.post("/add_climbing_spot")
