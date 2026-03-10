@@ -92,10 +92,19 @@ document.getElementById("toggleClimbing")
 
 // Click mode for adding elements
 let addingMode = false;
+
 document.getElementById("startAdd").addEventListener("click", () => {
-  console.log("CLICK ADD BUTTON");
+
+  const type = document.getElementById("newType").value;
+
+  if (type !== "hike") {
+    alert("Pour les spots d'escalade, utilise l'outil polygon sur la carte.");
+    return;
+  }
+
   addingMode = true;
-  alert("Clique sur la carte pour ajouter un élément");
+  alert("Click on the map to add new hike");
+
 });
 
 // Detect click on the map for getting coordinates
@@ -103,38 +112,48 @@ map.on("click", function(e) {
 
   if (!addingMode) return;
 
+  console.log("Map click detected", e.latlng);
+
   const lat = e.latlng.lat;
   const lon = e.latlng.lng;
-  const name = prompt("Nom ?");
-  const notes = prompt("Notes ?");
-  const type = document.getElementById("newType").value;
-
-  const data = {
-    name: name,
-    notes: notes,
-    lat: lat,
-    lon: lon
-  };
-
-  if (type === "hike") {
-    fetch("http://localhost:8000/add_hike", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(data)
-    })
-    .then(() => loadHikes());
+  const name = prompt("Name of the hike ?");
+  if (!name) {
+    addingMode = false;
+    return;
   }
+  const notes = prompt("Notes about this place ?");
+  const difficulty = prompt("Difficulty of the hike ? (1-5)")
+  const gaz = prompt("Exposure to the void ?")
 
-  if (type === "climbing") {
-    fetch("http://localhost:8000/add_climbing_spot", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(data)
+  fetch("http://localhost:8000/add_hike", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: name,
+      difficulty: difficulty,
+      gaz: gaz,
+      notes: notes,
+      lat: lat,
+      lon: lon
     })
-    .then(() => loadClimbingSpots());
-  }
+  })
+  .then(res => res.json())
+  .then(data => {
 
-  addingMode = false;
+    console.log("API response", data);
+
+    alert("Randonnée ajoutée !");
+
+    loadHikes();   // recharge les markers
+
+    addingMode = false;
+
+  })
+  .catch(err => {
+    console.error("Erreur API", err);
+  });
 
 });
 

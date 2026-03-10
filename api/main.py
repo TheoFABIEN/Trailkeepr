@@ -72,6 +72,9 @@ def read_climbing_spots():
 class NewSpot(BaseModel):
     name: str
     notes: str | None = None
+    difficulty: int
+    affluence: int
+    gaz: bool
     lat: float
     lon: float
 
@@ -85,13 +88,16 @@ def add_hike(spot: NewSpot):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO hikes (name, notes, geom)
+                INSERT INTO hikes (name, difficulty, affluence, gaz, notes, geom)
                 VALUES (
+                    %s,
+                    %s,
+                    %s,
                     %s,
                     %s,
                     ST_SetSRID(ST_MakePoint(%s,%s),4326)
                 )
-            """, (spot.name, spot.notes, spot.lon, spot.lat))
+            """, (spot.name, spot.difficulty, spot.affluence, spot.gaz, spot.notes, spot.lon, spot.lat))
 
     return {"status": "ok"}
 

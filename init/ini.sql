@@ -3,7 +3,6 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE TABLE hikes (
     id SERIAL PRIMARY KEY,
     name TEXT,
-    date DATE,
     difficulty INTEGER,
     affluence INTEGER,
     gaz BOOLEAN,
