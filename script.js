@@ -2,7 +2,7 @@
 // MAP INITIALISATION
 // =========================
 
-var map = L.map('map').setView([45.9, 6.1], 9);
+var map = L.map('map').setView([45.924, 6.868], 9);
 
 var hikesLayer = L.layerGroup().addTo(map);
 var climbingLayer = L.layerGroup().addTo(map);
@@ -11,6 +11,23 @@ L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 ).addTo(map);
 
+// =========================
+// GEOLOCATION
+// =========================
+
+function locateUser() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                map.setView([latitude, longitude], 9);
+            }
+        );
+    } else {
+        alert("The browser does not support geolocation.")
+    }
+}
+window.onload = locateUser;
 
 // =========================
 // ICONS
