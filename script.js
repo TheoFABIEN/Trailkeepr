@@ -38,12 +38,12 @@ function loadHikes() {
       L.marker([hike.lat, hike.lon])
       .addTo(hikesLayer)
       .bindPopup(`
-        <b>${hike.name}</b><br>
-        ${hike.notes || ""}
-        <br><br>
-        <button onclick="deleteHike(${hike.id})">
-          Supprimer
-        </button>
+        <div class="popup-content">
+            <b>${hike.name}</b><br>
+            ${hike.notes || ""}
+            <br><br>
+            <button class="popup-delete" onclick="deleteHike(${hike.id})">🗑</button>
+        </div>
       `);
     });
 

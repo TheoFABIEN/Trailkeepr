@@ -31,3 +31,26 @@ body {
   font-weight: bold;
   font-size: 18px
 }
+
+
+
+.leaflet-popup-content {
+  position: relative;
+}
+
+.popup-delete {
+  position: absolute;
+  bottom: -10px;
+  right: -15px;
+
+  background: none;
+  border: none;
+
+  font-size: 14px;
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.popup-delete:hover {
+  opacity: 1;
+}
