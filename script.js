@@ -77,7 +77,8 @@ function loadHikes() {
           <b>${hike.name}</b><br>
           ${hike.notes || ""}
           <br><br>
-          <button class="popup-delete" onclick="deleteHike(${hike.id})">🗑</button>
+          <button class="popup-delete" 
+          onclick="deleteItem('hikes', ${hike.id}, loadHikes)">🗑</button>
         </div>
       `);
     });
@@ -113,7 +114,8 @@ function loadClimbingSpots() {
           <b>${spot.name}</b><br>
           ${spot.notes || ""}
           <br><br>
-          <button class="popup-delete" onclick="deleteClimb(${spot.id})">🗑</button>
+          <button class="popup-delete" 
+          onclick="deleteItem('climbing_spots', ${spot.id}, loadClimbingSpots)">🗑</button>
         </div>
       `);
     });
@@ -149,7 +151,8 @@ function loadGPXHikes() {
             <div class="popup-content">
               <b>${hike.name}</b><br>
               <br><br>
-              <button class="popup-delete" onclick="deleteGPX(${hike.id})">🗑</button>
+              <button class="popup-delete" 
+              onclick="deleteItem('gpx_hikes', ${hike.id}, loadGPXHikes)">🗑</button>
             </div>
         `);
       });
@@ -188,50 +191,20 @@ document.getElementById("toggleClimbing")
 
 
 // =========================
-// DELETE HIKE
+// DELETE ITEM
 // =========================
 
-function deleteHike(id) {
+function deleteItem(type, id, reloadFunction) {
 
-  if (!confirm("Delete this hike ?")) return;
+  if (!confirm(`Delete this ${type}?`)) return;
 
-  fetch(`http://localhost:8000/hikes/${id}`, {method: "DELETE"})
-  .then(res => res.json())
-  .then(() => {
-    alert("Hike deleted");
-    loadHikes();
-  })
-  .catch(err => console.error(err));
-}
-
-// =========================
-// DELETE CLIMBING SPOT
-// =========================
-
-function deleteClimb(id) {
-    if (!confirm("Delete this climbing spot ?")) return;
-  fetch(`http://localhost:8000/climbing_spots/${id}`, {method: "DELETE"})
-  .then(res => res.json())
-  .then(() => {
-    alert("Climbing spot deleted");
-    loadClimbingSpots();
-  })
-  .catch(err => console.error(err));
-}
-
-// =========================
-// DELETE GPX_HIKE
-// =========================
-
-function deleteGPX(id) {
-    if (!confirm("Delete this GPX hike ?")) return;
-  fetch(`http://localhost:8000/gpx_hikes/${id}`, {method: "DELETE"})
-  .then(res => res.json())
-  .then(() => {
-    alert("GPX hike deleted");
-    loadGPXHikes();
-  })
-  .catch(err => console.error(err));
+  fetch(`http://localhost:8000/${type}/${id}`, { method: "DELETE" })
+    .then(res => res.json())
+    .then(() => {
+      alert(`${type} deleted`);
+      reloadFunction();
+    })
+    .catch(err => console.error(err));
 }
 
 
