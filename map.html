@@ -44,9 +44,14 @@ height: 100vh;
   <button id="applyFilters">Apply</button>
 
   <h3>Layers</h3>
+  <input type="checkbox" id="toggleGPX" checked>GPX tracks<br>
   <input type="checkbox" id="toggleHikes" checked>Hikes<br>
-  <input type="checkbox" id="toggleGPX" checked>GPX hikes<br>
   <input type="checkbox" id="toggleClimbing" checked>Climbing spots<br>
+
+
+  <h3>Add GPX</h3>
+    <input type="file" id="gpxFile" accept=".gpx">
+    <button id="uploadGPX">Import GPX</button>
 
   <h3>Add new element</h3>
   <select id="newType">
@@ -55,12 +60,7 @@ height: 100vh;
     <option value="climbing">Climbing spot</option>
   </select>
   <button id="startAdd">Add on the map</button>
-
-  <h3>Add new hike from GPX</h3>
-  <input type="file" id="gpxFile" accept=".gpx">
-  <button id="uploadGPX">Import GPX</button>
 </div>
-
 
 <div id="map"></div>
 
