@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, UploadFile, File
+from fastapi import FastAPI, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -168,12 +168,19 @@ def add_climbing_spot(spot: NewClimbingSpot):
 
 # GPX IMPORT
 @app.post("/upload_gpx")
-async def upload_gpx(file: UploadFile = File(...)):
+async def upload_gpx(
+        file: UploadFile = File(...),
+        name: str = Form(None),
+        difficulty: int = Form(None),
+        gaz: bool = Form(None),
+        notes: str = Form(None)
+        ):
 
     gpx_data = await file.read()
     gpx = gpxpy.parse(gpx_data.decode())
 
-    name = gpx.name if gpx.name else "Undefined"
+    if not name:
+        name = gpx.name if gpx.name else "Undefined"
 
     points = []
 
@@ -191,15 +198,16 @@ async def upload_gpx(file: UploadFile = File(...)):
         with conn.cursor() as cur:
 
             cur.execute("""
-            INSERT INTO gpx_hikes (name, geom)
+            INSERT INTO gpx_hikes (name, geom, notes)
             VALUES (
                 %s,
                 ST_SetSRID(
                     ST_GeomFromGeoJSON(%s),
                     4326
-                )
+                ),
+                %s
             )
-            """, (name, json.dumps(geojson)))
+            """, (name, json.dumps(geojson), notes))
 
     return {"status": "ok"}
 

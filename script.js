@@ -150,6 +150,7 @@ function loadGPXHikes() {
           .bindPopup(`
             <div class="popup-content">
               <b>${hike.name}</b><br>
+              ${hike.notes || ""}
               <br><br>
               <button class="popup-delete" 
               onclick="deleteItem('gpx_hikes', ${hike.id}, loadGPXHikes)">🗑</button>
@@ -365,26 +366,29 @@ document.getElementById("uploadGPX").addEventListener("click", () => {
     return;
   }
 
+  const name = prompt("Name of the GPX track ?");
+  const notes = prompt("Notes ?") || "";
+
+  const difficultyInput = prompt("Difficulty (1-5) ?");
+  const difficulty = difficultyInput ? parseInt(difficultyInput) : null;
+
+  const gazInput = prompt("Exposure to void ? (yes/no)");
+  const gaz = gazInput ? gazInput.toLowerCase() === "yes" : null;
+
   const formData = new FormData();
   formData.append("file", fileInput.files[0]);
+  formData.append("name", name);
+  formData.append("notes", notes);
+  formData.append("difficulty", difficulty);
+  formData.append("gaz", gaz);
 
   fetch("http://localhost:8000/upload_gpx", {
     method: "POST",
     body: formData
   })
   .then(res => res.json())
-  .then(data => {
-
-    const notes = prompt("Notes ?") || "";
-
+  .then(() => {
     alert("GPX imported!");
-
     loadGPXHikes();
-
   });
-
 });
-
-
-
-
