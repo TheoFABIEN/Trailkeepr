@@ -1,6 +1,5 @@
 <p align="center">
-  <img src="MyOutdoorArchive_logo.png" width="200" />
-  <h2 align="center">My Outdoor Archive</h2>
+  <img src="assets/MyOutdoorArchive_banner.png" />
 </p>
 
 This work aims to provide a self-hosted solution for storing your outdoor memories. 
