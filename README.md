@@ -9,8 +9,10 @@ This work aims to provide a self-hosted solution for storing your outdoor memori
 - Visualize everything on an interactive map
 - Filtering options
 
-## How to install ?
+## Usage
 Install on your NAS or every other home server using Docker Compose. After cloning the repo, just enter the command:
   
   <code>docker compose up -d</code>
+
+You can then access the interface via `http://localhost:3000`.
 
