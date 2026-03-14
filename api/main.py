@@ -28,16 +28,12 @@ def get_conn():
     )
 
 @app.get("/points")
-def get_points(difficulty: int = Query(None, ge=1, le=5), gaz: bool = Query(None)):
+def get_points():
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-
-            sql = """SELECT id, name, notes,
+            cur.execute("""SELECT id, name, notes,
                    ST_X(geom) as lon, ST_Y(geom) as lat
-                   FROM points"""
-            filters = []
-            params = []
-            cur.execute(sql, params)
+                   FROM points""")
             points = cur.fetchall()
     return points
 
@@ -46,9 +42,9 @@ def get_points(difficulty: int = Query(None, ge=1, le=5), gaz: bool = Query(None
 def read_areas():
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                "SELECT id, name, notes, ST_AsGeoJSON(geom) AS geom FROM areas;"
-            )
+            cur.execute("""SELECT id, name, notes, 
+                ST_AsGeoJSON(geom) AS geom 
+                FROM areas;""")
             areas = cur.fetchall()
     return areas
 
@@ -144,9 +140,6 @@ def add_area(area: NewArea):
 
 
 # GPX IMPORT
-from fastapi import UploadFile, File, Form
-import gpxpy
-import json
 
 @app.post("/upload_gpx")
 async def upload_gpx(
@@ -206,20 +199,29 @@ async def upload_gpx(
 
 # GET GPX HIKES FROM DATABASE
 @app.get("/gpx_hikes")
-def get_gpx_hikes():
+def get_gpx_hikes(difficulty: int = Query(None, ge=1, le=5), gaz: bool = Query(None)):
 
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-
-            cur.execute("""
-            SELECT id, name, notes,
+            sql = """
+            SELECT id, name, difficulty, gaz, notes,
             distance_km,
             elevation_gain,
             elevation_loss,
             ST_AsGeoJSON(geom) as geom
             FROM gpx_hikes
-            """)
-
+            """
+            filters = []
+            params = []
+            if difficulty is not None:
+                filters.append("difficulty = %s")
+                params.append(difficulty)
+            if gaz is not None:
+                filters.append("gaz = %s")
+                params.append(gaz)
+            if filters:
+                sql += " WHERE " + " AND ".join(filters)
+            cur.execute(sql, params)
             hikes = cur.fetchall()
 
     return hikes

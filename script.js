@@ -121,23 +121,24 @@ function loadAreas() {
 // =========================
 
 function loadGPXHikes() {
-  fetch("http://localhost:8000/gpx_hikes")
+  const difficulty = document.getElementById("difficulty").value;
+  const gaz = document.getElementById("gaz").value;
+
+  let url = "http://localhost:8000/gpx_hikes?";
+  if (difficulty) url += `difficulty=${difficulty}&`;
+  if (gaz) url += `gaz=${gaz}&`;
+
+  fetch(url)
     .then(res => res.json())
     .then(data => {
       gpxLayer.clearLayers();
-
       data.forEach(hike => {
         const geom = JSON.parse(hike.geom);
-
         const line = L.geoJSON(geom, {
           color: "purple",
           weight: 4
         }).addTo(gpxLayer);
-
-        // Get the center of the line
         const center = line.getBounds().getCenter();
-
-        // Add a marker at the center
         L.marker(center, { icon: violetIcon })
           .addTo(gpxLayer)
           .bindPopup(`
@@ -155,7 +156,7 @@ function loadGPXHikes() {
                 onclick="deleteItem('gpx_hikes', ${hike.id}, loadGPXHikes)">🗑</button>
               </div>
             </div>
-            `);
+          `);
       });
     });
 }
@@ -175,7 +176,7 @@ loadGPXHikes();
 // =========================
 
 document.getElementById("applyFilters")
-.addEventListener("click", loadPoints);
+.addEventListener("click", loadGPXHikes);
 
 document.getElementById("togglePoints")
 .addEventListener("change", function() {
@@ -336,11 +337,8 @@ map.on(L.Draw.Event.CREATED, function (event) {
   .then(() => {
 
     alert("Area added !");
-
     loadAreas();
-
   });
-
 });
 
 
@@ -405,7 +403,5 @@ document.getElementById("submitGPX").addEventListener("click", () => {
     document.getElementById("gpxFile").value = "";
 
     loadGPXHikes();
-
   });
-
 });
