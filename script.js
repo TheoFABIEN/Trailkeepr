@@ -149,8 +149,12 @@ function loadGPXHikes() {
               <div class="popup-footer">
                 <div class="popup-stats">
                   ${hike.distance_km ? hike.distance_km + " km" : ""}
-                  ${hike.elevation_gain ? " | D+ " + hike.elevation_gain + " m" : ""}
-                  ${hike.elevation_loss ? " | D- " + hike.elevation_loss + " m" : ""}
+                  ${hike.elevation_gain ? " | " 
+                    + "<span class='arrow-up'>↗</span> " 
+                    + hike.elevation_gain + " m" : ""}
+                  ${hike.elevation_loss ? " | " 
+                    + "<span class='arrow-down'>↘</span> " 
+                    + hike.elevation_loss + " m" : ""}
                 </div>
                 <button class="popup-delete"
                 onclick="deleteItem('gpx_hikes', ${hike.id}, loadGPXHikes)">🗑</button>
