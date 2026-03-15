@@ -6,26 +6,17 @@ import psycopg2
 import psycopg2.extras
 import json
 import gpxpy
+from database import get_conn
 
-
-origins = ["*"]
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-def get_conn():
-    return psycopg2.connect(
-        host="postgis",
-        database="hiking",
-        user="postgres",
-        password="postgres"
-    )
 
 @app.get("/points")
 def get_points():
