@@ -148,6 +148,7 @@ body {
 	border-radius: 8px;
 	font-size: 14px;
 	transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 #startAdd {
@@ -158,6 +159,7 @@ body {
 	font-size: 14px;
 	transition: all 0.2s ease;
 	padding: 2px 14px;
+    cursor: pointer;
 }
 
 #difficulty {
@@ -167,6 +169,7 @@ body {
 	border-radius: 8px;
 	font-size: 14px;
 	transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 #gaz {
@@ -176,6 +179,7 @@ body {
 	border-radius: 8px;
 	font-size: 14px;
 	transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 #applyFilters {
@@ -186,6 +190,7 @@ body {
 	border-radius: 8px;
 	font-size: 14px;
 	transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 #gaz:hover, #applyFilters:hover, #difficulty:hover, #startAdd:hover, #newType:hover {
