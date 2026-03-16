@@ -408,3 +408,18 @@ document.getElementById("submitGPX").addEventListener("click", () => {
     loadGPXHikes();
   });
 });
+
+
+// =========================
+// MOVE MAP ON CLICK
+// =========================
+
+map.on("popupopen", function(e) {
+
+  const marker = e.popup._source;
+
+  if (marker.getLatLng) {
+    map.flyTo(marker.getLatLng(), map.getZoom());
+  }
+
+});
