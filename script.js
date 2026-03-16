@@ -38,13 +38,15 @@ const orangeIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   iconSize: [25, 41],
-  iconAnchor: [12, 41]
+  iconAnchor: [12, 41],
+  popupAnchor: [0, -34]
 });
 const violetIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   iconSize: [25, 41],
-  iconAnchor: [12, 41]
+  iconAnchor: [12, 41],
+  popupAnchor: [0, -34]
 });
 
 
@@ -422,25 +424,4 @@ map.on("popupopen", function(e) {
     map.flyTo(marker.getLatLng(), map.getZoom());
   }
 
-});
-
-
-// =========================
-// HIDE MARKER WHEN POPUP
-// =========================
-
-map.on("popupopen", function (e) {
-  const marker = e.popup._source;
-
-  if (marker.setOpacity) {
-    marker.setOpacity(0);
-  }
-});
-
-map.on("popupclose", function (e) {
-  const marker = e.popup._source;
-
-  if (marker.setOpacity) {
-    marker.setOpacity(1);
-  }
 });
