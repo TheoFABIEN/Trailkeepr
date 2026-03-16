@@ -423,3 +423,24 @@ map.on("popupopen", function(e) {
   }
 
 });
+
+
+// =========================
+// HIDE MARKER WHEN POPUP
+// =========================
+
+map.on("popupopen", function (e) {
+  const marker = e.popup._source;
+
+  if (marker.setOpacity) {
+    marker.setOpacity(0);
+  }
+});
+
+map.on("popupclose", function (e) {
+  const marker = e.popup._source;
+
+  if (marker.setOpacity) {
+    marker.setOpacity(1);
+  }
+});

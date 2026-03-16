@@ -44,7 +44,22 @@ body {
 	text-align: center;
 }
 
+.leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(3px);
+    transition: background 0.2s ease;
+}
+
+.leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0) !important;
+}
+
+.leaflet-popup:hover .leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 1) !important;
+}
+
 .leaflet-popup-content {
+    background: transparent !important;
 	position: relative;
     font-size: 16px;
 }
