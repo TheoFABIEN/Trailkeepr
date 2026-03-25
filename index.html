@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8"/>
 <title>⛰️ My Outdoor Archive</title>
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
@@ -11,7 +10,7 @@
 
 <style>
 #map {
-height: 100vh;
+    height: 100vh;
 }
 </style>
 
@@ -22,7 +21,7 @@ height: 100vh;
 
 <div id="gpxModal" class="modal">
   <div class="modal-content">
-    <h2>Import GPX Track</h2>
+    <h2>Import GPX file</h2>
     <input type="file" id="gpxFile" accept=".gpx"><br><br>
     <label>Name</label>
     <input type="text" id="gpxName" placeholder="Name of the hike">
@@ -52,23 +51,27 @@ height: 100vh;
 
 <div id="sidebar">
 
-  <button id="openGPXModal">Import GPX file</button>
+  <div class="main-title">My Outdoor Archive</div>
+
+  <div id="upload-gpx">
+    <p class="secondary-text">Upload your track data and add it to the database.</p>
+    <button id="openGPXModal">Import GPX file</button>
+  </div>
 
   <div id="newTypeBox">
-  <h3>Add other element</h3>
-  <select id="newType" class="selectButton">
-    <option value="">--Choose an option--</option>
+  <h3>ADD OTHER ELEMENT</h3>
+  <select id="newType" class="selectButton-alt">
     <option value="point">Point of interest</option>
     <option value="area">Area</option>
   </select>
-  <button id="startAdd" class="applyButton">Add on the map</button>
+  <button id="startAdd" class="applyButton">⚐ &ensp; Add on the map</button>
   </div>
 
   <div id="filtersBox">
-  <h3>Hike filters</h3>
+  <h3>HIKE FILTERS</h3>
   <p>
     <div class="distance-header">
-      <label>Max distance :</label><br>
+      <p class="secondary-text">Max distance</p>
       <span id="distanceValue">50+ km</span>
     </div>
     <input type="range"
@@ -78,8 +81,8 @@ height: 100vh;
            step="1"
            value="50">
   </p>
+  <p class="secondary-text">Difficulty</p>
   <p>
-  <label for="difficulty">Difficulty of hikes :</label>
   <select id="difficulty" class="selectButton">
     <option value="">All</option>
     <option value="1">1</option>
@@ -89,8 +92,8 @@ height: 100vh;
     <option value="5">5</option>
   </select>
   </p>
+  <p class="secondary-text">Exposure to void</p>
   <p>
-  <label for="gaz">Exposure to the void :</label>
   <select id="gaz" class="selectButton">
     <option value="">All</option>
     <option value="true">Yes</option>
@@ -101,21 +104,21 @@ height: 100vh;
   </div>
 
   <div id="layersBox">
-  <h3>Layers</h3>
+  <h3>MAP OBJECTS</h3>
   <label class="toggle">
+    <span class="label-text">GPX tracks</span>
     <input type="checkbox" id="toggleGPX" checked>
     <span class="slider"></span>
-    <span class="label-text">GPX tracks</span>
   </label>
   <label class="toggle">
+    <span class="label-text">Points of interest</span>
     <input type="checkbox" id="togglePoints" checked>
     <span class="slider"></span>
-    <span class="label-text">Points of interest</span>
   </label>
   <label class="toggle">
+    <span class="label-text">Areas</span>
     <input type="checkbox" id="toggleAreas" checked>
     <span class="slider"></span>
-    <span class="label-text">Areas</span>
   </label>
 
   </div>
@@ -131,14 +134,20 @@ height: 100vh;
 <script src="script.js"></script>
 
 <script>
-var geocoder = L.Control.geocoder({
-  defaultMarkGeocode: false
-})
-.on('markgeocode', function (e) {
-  var bbox = e.geocode.bbox;
-  map.fitBounds(bbox);
-})
-.addTo(map);
+    var geocoder = L.Control.geocoder({
+      defaultMarkGeocode: false,
+      collapsed: false,
+      placeholder: "Search adventures"
+    })
+    .on('markgeocode', function (e) {
+      var bbox = e.geocode.bbox;
+      map.fitBounds(bbox);
+    });
+    geocoder.addTo(map);
+    setTimeout(() => {
+      const container = document.querySelector('.leaflet-control-geocoder');
+      document.getElementById('map').appendChild(container);
+    }, 0);
 </script>
 
 </body>
