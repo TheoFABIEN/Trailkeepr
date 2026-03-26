@@ -7,7 +7,8 @@ This work aims to provide a self-hosted solution for storing your outdoor memori
 - Create points of interest or areas
 - Add various information about each hike
 - Visualize everything on an interactive map
-- Filtering options
+- Use filtering options
+- Find places with the search bar
 
 <p align="center">
   <img src="assets/MyOutdoorArchive_demo.png" width=600/>
