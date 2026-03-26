@@ -1,8 +1,11 @@
+let layersLoaded = 0;
+const TOTAL_LAYERS = 3;
+
 // =========================
 // MAP INITIALISATION
 // =========================
 
-var map = L.map('map').setView([45.924, 6.868], 9);
+var map = L.map('map');
 
 var pointsLayer = L.layerGroup().addTo(map);
 var gpxLayer = L.layerGroup().addTo(map);
@@ -11,6 +14,27 @@ var areasLayer = L.layerGroup().addTo(map);
 L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 ).addTo(map);
+
+function fitMapToData() {
+  const allLayers = [];
+  pointsLayer.eachLayer(layer => allLayers.push(layer));
+  gpxLayer.eachLayer(layer => allLayers.push(layer));
+  areasLayer.eachLayer(layer => allLayers.push(layer));
+  if (allLayers.length === 0) {
+    // fallback
+    map.setView([45.924, 6.868], 6);
+    return;
+  }
+  const group = L.featureGroup(allLayers);
+  map.fitBounds(group.getBounds(), { padding: [50, 50] });
+}
+
+function checkAllLoaded() {
+  if (layersLoaded === TOTAL_LAYERS) {
+    fitMapToData();
+    layersLoaded = 0;
+  }
+}
 
 
 // =========================
@@ -78,6 +102,8 @@ function loadPoints() {
         </div>
       `);
     });
+  layersLoaded++;
+  checkAllLoaded();
   });
 }
 
@@ -112,6 +138,8 @@ function loadAreas() {
         </div>
       `);
     });
+  layersLoaded++;
+  checkAllLoaded();
   });
 }
 
@@ -169,7 +197,9 @@ function loadGPXHikes() {
             </div>
           `);
       });
-    });
+      layersLoaded++;
+      checkAllLoaded();
+  });
 }
 
 
