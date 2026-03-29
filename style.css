@@ -68,19 +68,6 @@ body {
 	text-align: left;
 }
 
-.leaflet-draw.leaflet-control {
-    margin-left: 140px !important;
-}
-.leaflet-control-zoom {
-    margin-left: 140px !important;
-}
-
-.leaflet-top.leaflet-right {
-    right: 10px;
-    display: flex;
-    justify-content: center;
-}
-
 .leaflet-popup-content-wrapper {
     background: rgba(255, 255, 255, 0.7) !important;
     backdrop-filter: blur(3px);
@@ -366,3 +353,50 @@ body {
 }
 
 
+/* =========================
+   PHONE MODE
+========================= */
+
+#mobileToggle {
+  display: none;
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  z-index: 2000;
+  background: var(--ui-darkgreen);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  #mobileToggle {
+    display: block;
+  }
+  body.mobile-mode #sidebar {
+    box-sizing: border-box;
+    position: absolute;
+    width: 100%;
+    left: 0;
+    z-index: 1500;
+  }
+  body.mobile-mode #map {
+    left: 0;
+    width: 100%;
+  }
+  body.mobile-mode.sidebar-open #sidebar {
+    display: block;
+  }
+  body.mobile-mode.sidebar-open #map {
+    display: none;
+  }
+  body.mobile-mode:not(.sidebar-open) #sidebar {
+    display: none;
+  }
+  body.mobile-mode:not(.sidebar-open) #map {
+    display: block;
+  }
+}

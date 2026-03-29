@@ -5,7 +5,12 @@ const TOTAL_LAYERS = 3;
 // MAP INITIALISATION
 // =========================
 
-var map = L.map('map');
+var map = L.map('map', {
+    zoomControl: false
+});
+L.control.zoom({
+  position: 'topright'
+}).addTo(map);
 
 var pointsLayer = L.layerGroup().addTo(map);
 var gpxLayer = L.layerGroup().addTo(map);
@@ -35,6 +40,70 @@ function checkAllLoaded() {
     layersLoaded = 0;
   }
 }
+
+
+// =========================
+// RESPONSIVE MODE
+// =========================
+
+let isMobile = false;
+let isSidebarVisible = false;
+const mobileToggle = document.getElementById("mobileToggle");
+
+function updateResponsiveMode() {
+  const wasMobile = isMobile;
+  isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+  if (isMobile) {
+    document.body.classList.add("mobile-mode");
+
+    if (!wasMobile) {
+      isSidebarVisible = false;
+      document.body.classList.remove("sidebar-open");
+    }
+
+  } else {
+    document.body.classList.remove("mobile-mode");
+    document.body.classList.remove("sidebar-open");
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+  }
+  updateLeafletControlsVisibility();
+}
+
+mobileToggle.addEventListener("click", () => {
+  isSidebarVisible = !isSidebarVisible;
+
+  if (isSidebarVisible) {
+    document.body.classList.add("sidebar-open");
+  } else {
+    document.body.classList.remove("sidebar-open");
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+  }
+  updateLeafletControlsVisibility();
+});
+
+function updateLeafletControlsVisibility() {
+  const controls = document.querySelectorAll(
+    ".leaflet-control-container"
+  );
+
+  controls.forEach(ctrl => {
+    if (isMobile && isSidebarVisible) {
+      ctrl.style.display = "none";
+    } else {
+      ctrl.style.display = "";
+    }
+  });
+}
+window.addEventListener("resize", updateResponsiveMode);
+
+updateResponsiveMode();
 
 
 // =========================
@@ -346,6 +415,7 @@ var drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
 
 var drawControl = new L.Control.Draw({
+  position: 'topright',
   draw: {
     polygon: true,
     polyline: false,
@@ -363,11 +433,8 @@ map.addControl(drawControl);
 map.on(L.Draw.Event.CREATED, function (event) {
 
   var layer = event.layer;
-
   drawnItems.addLayer(layer);
-
   const geojson = layer.toGeoJSON();
-
   const name = prompt("Name of the area ?");
   const notes = prompt("Notes ?");
 
@@ -477,4 +544,3 @@ map.on("popupopen", function(e) {
 loadPoints();
 loadAreas();
 loadGPXHikes();
-
