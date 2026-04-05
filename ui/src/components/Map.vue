@@ -252,7 +252,8 @@ async function reloadGPX() {
   renderGPX()
 }
 defineExpose({
-  reloadGPX
+  reloadGPX,
+  invalidateSize
 })
 
 watch(
@@ -294,6 +295,19 @@ watch(
     }
   }
 )
+
+// Elements that make the app responsive:
+
+function invalidateSize() {
+  if (map) map.invalidateSize()
+}
+const props = defineProps(['isSidebarOpen', 'isMobile'])
+watch(() => [props.isSidebarOpen, props.isMobile], () => {
+  const controls = document.querySelectorAll(".leaflet-control-container");
+  controls.forEach(ctrl => {
+    ctrl.style.display = (props.isMobile && props.isSidebarOpen) ? "none" : "";
+  });
+})
 </script>
 
 
@@ -362,5 +376,11 @@ watch(
 }
 .popup-delete:hover {
 	opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .map {
+    left: 0;
+  }
 }
 </style>

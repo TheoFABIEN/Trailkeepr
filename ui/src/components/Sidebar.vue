@@ -203,4 +203,12 @@ function exportFilters() {
     color: var(--ui-dark);
     outline: 1px var(--ui-dark) solid;
 }
+@media (max-width: 768px) {
+  #sidebar {
+    width: 100% !important;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+}
 </style>
