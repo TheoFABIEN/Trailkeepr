@@ -1,4 +1,4 @@
-const BASE_URL = "/api"
+export const BASE_URL = "/api"
 
 async function request(endpoint, options = {}) {
 	const res = await fetch(`${BASE_URL}/${endpoint}`, options)

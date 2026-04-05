@@ -34,6 +34,7 @@
 <script setup>
 
 import { ref } from "vue"
+import { BASE_URL } from "@/utils/api"
 
 const emit = defineEmits(["close", "uploaded"])
 
@@ -63,7 +64,7 @@ function submit() {
   formData.append("gaz", gaz.value)
   formData.append("notes", notes.value)
 
-  fetch("http://localhost:8000/upload_gpx", {
+  fetch(`${BASE_URL}/upload_gpx`, {
     method: "POST",
     body: formData
   })
