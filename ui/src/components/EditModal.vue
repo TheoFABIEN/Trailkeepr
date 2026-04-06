@@ -8,8 +8,8 @@
         <input v-model="difficulty" placeholder="Difficulty" />
         <input v-model="gaz" placeholder="Exposure" />
       </div>
-      <button class="modalButton" @click="submit">Save</button>
-      <button class="modalButton" @click="$emit('close')">Cancel</button>
+      <button class="applyButton" @click="submit">Save</button>
+      <button class="applyButton" @click="$emit('close')">Cancel</button>
     </div>
   </div>
 </template>

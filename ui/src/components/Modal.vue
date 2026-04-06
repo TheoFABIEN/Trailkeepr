@@ -23,8 +23,8 @@
     <label>Notes</label>
     <textarea id="gpxNotes" v-model="notes" rows="6" placeholder="Notes about the hike..."></textarea>
     <div class="modal-buttons">
-      <button id="submitGPX" class="modalButton" @click="submit">Import</button>
-      <button id="cancelGPX" class="modalButton" @click="close">Cancel</button>
+      <button id="submitGPX" class="applyButton" @click="submit">Import</button>
+      <button id="cancelGPX" class="applyButton" @click="close">Cancel</button>
     </div>
   </div>
 </div>

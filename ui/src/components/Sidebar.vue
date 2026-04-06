@@ -182,23 +182,7 @@ function exportFilters() {
     margin: 0 auto;
     display: block;
 }
-.applyButton {
-    width: 100%;
-    background: var(--ui-darkgreen);
-    padding: 10px 14px;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    text-align: center;
-    margin: 0 auto;
-    display: block;
-    margin-top: 10px;
-}
-.applyButton:hover, .selectButton:hover {
+.selectButton:hover {
     background: transparent;
     color: var(--ui-dark);
     outline: 1px var(--ui-dark) solid;
