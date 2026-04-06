@@ -1,19 +1,20 @@
 <template>
 	<div
-		ref="mapContainer"
-		class="map"></div>
+		ref="mapContainer" class="map"></div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed, defineExpose } from "vue"
+import { ref, onMounted, watch, defineExpose } from "vue"
+import L from "leaflet"
+
 import { useFilterStore } from "@/stores/useFilters"
 import { drawModeStore } from "@/stores/drawMode"
+import { standardPopup, gpxPopup } from "@/utils/popupTemplate"
 import { orangeIcon, violetIcon, blueIcon } from "@/utils/leafletIcons"
 import {
-  getPoints, getAreas, getGPX,
-  addPoint, addArea, deleteItem
+  getPoints, getAreas, getGPX, addPoint, addArea, deleteItem
 } from '@/utils/api'
-import L from "leaflet"
+
 import "leaflet/dist/leaflet.css"
 import "leaflet-control-geocoder"
 import "leaflet-control-geocoder/dist/Control.Geocoder.css"
@@ -63,14 +64,9 @@ function fitMapToData() {
 function renderPoints() {
 	pointsLayer.clearLayers()
 	points.value.forEach((point) => {
-		L.marker([point.lat, point.lon], {icon: blueIcon}).addTo(pointsLayer).bindPopup(`
-      <div class="popup-content">
-        <b>${point.name}</b><br>
-        ${point.notes || ""}
-        <br><br>
-        <button class="popup-delete" data-id="${point.id}" data-type="points">🗑</button>
-      </div>
-    `)
+		L.marker([point.lat, point.lon], {icon: blueIcon})
+    .bindPopup(standardPopup(point))
+    .addTo(pointsLayer)
 	})
 }
 function renderAreas() {
@@ -79,14 +75,9 @@ function renderAreas() {
 		const geom = JSON.parse(area.geom)
 		const layer = L.geoJSON(geom, { color: "orange" }).addTo(areasLayer)
 		const center = layer.getBounds().getCenter()
-		L.marker(center, { icon: orangeIcon }).addTo(areasLayer).bindPopup(`
-      <div class="popup-content">
-        <b>${area.name}</b><br>
-        ${area.notes || ""}
-        <br><br>
-        <button class="popup-delete" data-id="${area.id}" data-type="areas">🗑</button>
-      </div>
-    `)
+		L.marker(center, { icon: orangeIcon })
+    .bindPopup(standardPopup(center))
+    .addTo(areasLayer)
 	})
 }
 function renderGPX() {
@@ -105,35 +96,9 @@ function renderGPX() {
 			weight: 4,
 		}).addTo(gpxLayer)
 		const center = line.getBounds().getCenter()
-		L.marker(center, { icon: violetIcon }).addTo(gpxLayer).bindPopup(`
-      <div class="popup-content">
-        <b>${hike.name}</b><br>
-        ${hike.notes || ""}
-        <br><br>
-        <div class="popup-footer">
-          <div class="popup-stats">
-            ${hike.distance_km ? hike.distance_km + " km" : ""}
-            ${
-							hike.elevation_gain
-								? " | " +
-									"<span class='arrow-up'>↗</span> " +
-									hike.elevation_gain +
-									" m"
-								: ""
-						}
-            ${
-							hike.elevation_loss
-								? " | " +
-									"<span class='arrow-down'>↘</span> " +
-									hike.elevation_loss +
-									" m"
-								: ""
-						}
-          </div>
-          <button class="popup-delete" data-id="${hike.id}" data-type="gpx_hikes">🗑</button>
-        </div>
-      </div>
-    `)
+		L.marker(center, { icon: violetIcon })
+    .bindPopup(gpxPopup(hike))
+    .addTo(gpxLayer)
 	})
 }
 
