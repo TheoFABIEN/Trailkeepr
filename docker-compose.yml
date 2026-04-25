@@ -11,13 +11,13 @@ services:
       - ./init:/docker-entrypoint-initdb.d
 
   api:
-    image: python:3.11
+    build:
+      context: ./api
+      dockerfile: Dockerfile
     container_name: hiking_api
-    working_dir: /app
     volumes:
       - ./api:/app
       - ./uploads:/app/uploads
-    command: bash -c "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000"
     depends_on:
       - postgis
 
