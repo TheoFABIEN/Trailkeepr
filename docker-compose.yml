@@ -3,9 +3,9 @@ services:
     image: postgis/postgis:16-3.4
     container_name: hiking_postgis
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: hiking
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-hiking}
     volumes:
       - ./data:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d
@@ -15,6 +15,10 @@ services:
       context: ./api
       dockerfile: Dockerfile
     container_name: hiking_api
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-hiking}
     volumes:
       - ./api:/app
       - ./uploads:/app/uploads

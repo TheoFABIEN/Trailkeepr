@@ -2,3 +2,4 @@ data/
 api/__pycache__/
 uploads/
 api/uploads/
+.env
