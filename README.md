@@ -19,7 +19,7 @@ A self-hosted app to archive your outdoor adventures — hikes, climbs, scramble
 
 ## Usage
 
-The only prerequisite is Docker. No API key or external account required.
+The only prerequisite is [Docker](https://docs.docker.com/get-started/get-docker/). No API key or external account required.
 
 ```bash
 git clone https://github.com/TheoFABIEN/My-Outdoor-Archive.git
