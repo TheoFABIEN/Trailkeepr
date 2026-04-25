@@ -59,3 +59,25 @@ export function updateItem(type, id, data) {
 		body: JSON.stringify(data),
 	})
 }
+
+export function getPhotos(hikeId) {
+	return request(`photos/${hikeId}`)
+}
+
+export function deletePhoto(photoId) {
+	return request(`photos/${photoId}`, { method: "DELETE" })
+}
+
+export function uploadPhoto(hikeId, file, caption = "") {
+	const formData = new FormData()
+	formData.append("hike_id", hikeId)
+	formData.append("file", file)
+	formData.append("caption", caption)
+	return fetch(`${BASE_URL}/photos`, {
+		method: "POST",
+		body: formData,
+	}).then((res) => {
+		if (!res.ok) throw new Error(`API error: ${res.status}`)
+		return res.json()
+	})
+}

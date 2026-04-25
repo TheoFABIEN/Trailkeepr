@@ -1,4 +1,7 @@
-from fastapi import FastAPI, Query, UploadFile, File, Form
+import os
+import aiofiles
+from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Query, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -10,6 +13,10 @@ from database import get_conn
 
 
 app = FastAPI()
+
+UPLOAD_DIR = "/app/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
@@ -255,3 +262,55 @@ def update_gpx(item_id: int, item: UpdateItem):
                 (item.name, item.notes, item.difficulty, item.gaz, item_id)
             )
     return {"status": "updated"}
+
+
+########################################################
+#      PHOTOS HANDLING
+########################################################
+
+
+@app.post("/photos")
+async def upload_photo(
+    hike_id: int = Form(...),
+    caption: str = Form(None),
+    file: UploadFile = File(...)
+):
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+        raise HTTPException(status_code=400, detail="Unsupported format")
+    filename = f"{hike_id}_{int(__import__('time').time())}{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    async with aiofiles.open(filepath, "wb") as f:
+        content = await file.read()
+        await f.write(content)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO photos (hike_id, filename, caption) VALUES (%s, %s, %s)",
+                (hike_id, filename, caption)
+            )
+    return {"status": "ok", "filename": filename}
+
+@app.get("/photos/{hike_id}")
+def get_photos(hike_id: int):
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT id, filename, caption FROM photos WHERE hike_id = %s ORDER BY id",
+                (hike_id,)
+            )
+            return cur.fetchall()
+
+@app.delete("/photos/{photo_id}")
+def delete_photo(photo_id: int):
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT filename FROM photos WHERE id = %s", (photo_id,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Photo introuvable")
+            filepath = os.path.join(UPLOAD_DIR, row["filename"])
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            cur.execute("DELETE FROM photos WHERE id = %s", (photo_id,))
+    return {"status": "deleted"}

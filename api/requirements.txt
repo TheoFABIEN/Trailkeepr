@@ -3,3 +3,4 @@ uvicorn
 psycopg2-binary
 gpxpy
 python-multipart
+aiofiles

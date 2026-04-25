@@ -24,5 +24,6 @@ export const gpxPopup = (hike) => {
             <button class="popup-edit" data-id="${hike.id}" data-type="gpx_hikes">✏️</button>
             <button class="popup-delete" data-id="${hike.id}" data-type="gpx_hikes">🗑</button>
         </div>
+        <div id="photo-gallery-${hike.id}"></div>
     </div>`
 }

@@ -8,7 +8,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, defineExpose } from "vue"
+import { ref, onMounted, watch, defineExpose, createApp } from "vue"
+import PhotoGallery from "@/components/PhotoGallery.vue"
 import L from "leaflet"
 
 import { useFilterStore } from "@/stores/useFilters"
@@ -105,7 +106,7 @@ function renderGPX() {
 			weight: 4,
 		}).addTo(gpxLayer)
 		const center = line.getBounds().getCenter()
-		L.marker(center, { icon: violetIcon })
+		L.marker(center, { icon: violetIcon, hikeId: hike.id })
     .bindPopup(gpxPopup(hike))
     .addTo(gpxLayer)
 	})
@@ -147,6 +148,15 @@ onMounted(async () => {
       editBtn.onclick = () => {
         handleEdit(editBtn.dataset.type, editBtn.dataset.id)
         map.closePopup()
+      }
+    }
+    const source = e.popup._source
+    const hikeId = source?.options?.hikeId
+    if (hikeId) {
+      const mountPoint = container.querySelector(`#photo-gallery-${hikeId}`)
+      if (mountPoint) {
+        const galleryApp = createApp(PhotoGallery, { hikeId })
+        galleryApp.mount(mountPoint)
       }
     }
   })  
