@@ -83,7 +83,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { getPhotos, uploadPhoto, deletePhoto } from '@/utils/api'
 
-const props = defineProps({ hikeId: Number })
+const props = defineProps({
+  itemType: { type: String, required: true },
+  itemId: { type: Number, required: true }
+})
 const emit = defineEmits(['updated'])
 
 const photos = ref([])
@@ -96,7 +99,7 @@ const fileInput = ref(null)
 const visiblePhotos = computed(() => photos.value.slice(0, 2))
 
 async function loadPhotos() {
-  photos.value = await getPhotos(props.hikeId)
+  photos.value = await getPhotos(props.itemType, props.itemId)
 }
 
 function handleFiles(e) {
@@ -118,7 +121,7 @@ async function submitPhotos() {
   uploading.value = true
   try {
     for (const file of pendingFiles.value) {
-      await uploadPhoto(props.hikeId, file, caption.value)
+      await uploadPhoto(props.itemType, props.itemId, file, caption.value)
     }
     pendingFiles.value = []
     caption.value = ""
@@ -139,17 +142,9 @@ async function handleDelete(photoId) {
   await loadPhotos()
 }
 
-function openLightbox(index) {
-  lightboxIndex.value = index
-}
-
-function prevPhoto() {
-  lightboxIndex.value = (lightboxIndex.value - 1 + photos.value.length) % photos.value.length
-}
-
-function nextPhoto() {
-  lightboxIndex.value = (lightboxIndex.value + 1) % photos.value.length
-}
+function openLightbox(index) { lightboxIndex.value = index }
+function prevPhoto() { lightboxIndex.value = (lightboxIndex.value - 1 + photos.value.length) % photos.value.length }
+function nextPhoto() { lightboxIndex.value = (lightboxIndex.value + 1) % photos.value.length }
 
 onMounted(loadPhotos)
 </script>

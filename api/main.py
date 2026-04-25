@@ -270,10 +270,13 @@ def update_gpx(item_id: int, item: UpdateItem):
 
 @app.post("/photos")
 async def upload_photo(
-    hike_id: int = Form(...),
+    item_id: int = Form(...),
+    item_type: str = Form(...),
     caption: str = Form(None),
     file: UploadFile = File(...)
 ):
+    if item_type not in ("gpx_hikes", "points", "areas"):
+        raise HTTPException(status_code=400, detail="item_type invalide")
     content = await file.read()
     MAX_BYTES = 15 * 1024 * 1024
     if len(content) > MAX_BYTES:
@@ -281,27 +284,31 @@ async def upload_photo(
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
         raise HTTPException(status_code=400, detail="Unsupported format")
-    filename = f"{hike_id}_{int(__import__('time').time())}{ext}"
+    filename = f"{item_type}_{item_id}_{int(__import__('time').time())}{ext}"
     filepath = os.path.join(UPLOAD_DIR, filename)
     async with aiofiles.open(filepath, "wb") as f:
         await f.write(content)
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO photos (hike_id, filename, caption) VALUES (%s, %s, %s)",
-                (hike_id, filename, caption)
+                "INSERT INTO photos (item_id, item_type, filename, caption) VALUES (%s, %s, %s, %s)",
+                (item_id, item_type, filename, caption)
             )
     return {"status": "ok", "filename": filename}
 
-@app.get("/photos/{hike_id}")
-def get_photos(hike_id: int):
+
+@app.get("/photos/{item_type}/{item_id}")
+def get_photos(item_type: str, item_id: int):
+    if item_type not in ("gpx_hikes", "points", "areas"):
+        raise HTTPException(status_code=400, detail="item_type invalide")
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "SELECT id, filename, caption FROM photos WHERE hike_id = %s ORDER BY id",
-                (hike_id,)
+                "SELECT id, filename, caption FROM photos WHERE item_id = %s AND item_type = %s ORDER BY id",
+                (item_id, item_type)
             )
             return cur.fetchall()
+
 
 @app.delete("/photos/{photo_id}")
 def delete_photo(photo_id: int):

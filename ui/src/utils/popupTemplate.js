@@ -5,6 +5,7 @@ export const standardPopup = (item, type = "points") => `
             <button class="popup-edit" data-id="${item.id}" data-type="${type}">✏️</button>
             <button class="popup-delete" data-id="${item.id}" data-type="${type}">🗑</button>
         </div>
+        <div id="photo-gallery-${type}-${item.id}"></div>
     </div>`
 
 export const gpxPopup = (hike) => {
@@ -24,6 +25,6 @@ export const gpxPopup = (hike) => {
             <button class="popup-edit" data-id="${hike.id}" data-type="gpx_hikes">✏️</button>
             <button class="popup-delete" data-id="${hike.id}" data-type="gpx_hikes">🗑</button>
         </div>
-        <div id="photo-gallery-${hike.id}"></div>
+        <div id="photo-gallery-gpx_hikes-${hike.id}"></div>
     </div>`
 }

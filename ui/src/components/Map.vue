@@ -132,34 +132,38 @@ onMounted(async () => {
   }).addTo(map)
  
   map.on("popupopen", (e) => {
-    const marker = e.popup._source
-    if (marker.getLatLng) {
-      map.flyTo(marker.getLatLng(), map.getZoom())
-    }
-    const container = e.popup.getElement()
-    const deleteBtn = container.querySelector(".popup-delete")
-    if (deleteBtn) {
-      deleteBtn.onclick = () => {
-        handleDelete(deleteBtn.dataset.type, deleteBtn.dataset.id)
+      const marker = e.popup._source
+      if (marker.getLatLng) {
+        map.flyTo(marker.getLatLng(), map.getZoom())
       }
-    }
-    const editBtn = container.querySelector(".popup-edit")
-    if (editBtn) {
-      editBtn.onclick = () => {
-        handleEdit(editBtn.dataset.type, editBtn.dataset.id)
-        map.closePopup()
+      const container = e.popup.getElement()
+
+      const deleteBtn = container.querySelector(".popup-delete")
+      if (deleteBtn) {
+        deleteBtn.onclick = () => {
+          handleDelete(deleteBtn.dataset.type, deleteBtn.dataset.id)
+        }
       }
-    }
-    const source = e.popup._source
-    const hikeId = source?.options?.hikeId
-    if (hikeId) {
-      const mountPoint = container.querySelector(`#photo-gallery-${hikeId}`)
-      if (mountPoint) {
-        const galleryApp = createApp(PhotoGallery, { hikeId })
-        galleryApp.mount(mountPoint)
+      const editBtn = container.querySelector(".popup-edit")
+      if (editBtn) {
+        editBtn.onclick = () => {
+          handleEdit(editBtn.dataset.type, editBtn.dataset.id)
+          map.closePopup()
+        }
       }
-    }
-  })  
+      const galleryTypes = ["gpx_hikes", "points", "areas"]
+      for (const type of galleryTypes) {
+        const btn = container.querySelector(`[data-type="${type}"]`)
+        if (!btn) continue
+        const itemId = parseInt(btn.dataset.id)
+        const mountPoint = container.querySelector(`#photo-gallery-${type}-${itemId}`)
+        if (mountPoint && !mountPoint._galleryMounted) {
+          const galleryApp = createApp(PhotoGallery, { itemType: type, itemId })
+          galleryApp.mount(mountPoint)
+          mountPoint._galleryMounted = true
+        }
+      }
+  })
 
   locateUser()
 

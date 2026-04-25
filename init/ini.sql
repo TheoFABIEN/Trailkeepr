@@ -34,7 +34,8 @@ CREATE INDEX IF NOT EXISTS idx_gpx_hikes_geom ON gpx_hikes USING GIST (geom);
 
 CREATE TABLE IF NOT EXISTS photos (
     id SERIAL PRIMARY KEY,
-    hike_id INTEGER REFERENCES gpx_hikes(id) ON DELETE CASCADE,
+    item_id INTEGER NOT NULL,
+    item_type TEXT NOT NULL CHECK (item_type IN ('gpx_hikes', 'points', 'areas')),
     filename TEXT NOT NULL,
     caption TEXT
 );

@@ -21,56 +21,46 @@ export function getGPX() {
 export function addPoint(data) {
 	return request("add_point", {
 		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
+		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(data),
 	})
 }
 export function addArea(data) {
 	return request("add_area", {
 		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
+		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(data),
 	})
 }
 
 export function deleteItem(type, id) {
-	return request(`${type}/${id}`, {
-		method: "DELETE",
-	})
+	return request(`${type}/${id}`, { method: "DELETE" })
 }
 
 export function uploadGPX(formData) {
-	return fetch(`${BASE_URL}/upload_gpx`, {
-		method: "POST",
-		body: formData,
-	})
+	return fetch(`${BASE_URL}/upload_gpx`, { method: "POST", body: formData })
 }
 
 export function updateItem(type, id, data) {
 	return request(`${type}/${id}`, {
 		method: "PUT",
-		headers: {
-			"Content-Type": "application/json",
-		},
+		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(data),
 	})
 }
 
-export function getPhotos(hikeId) {
-	return request(`photos/${hikeId}`)
+export function getPhotos(itemType, itemId) {
+	return request(`photos/${itemType}/${itemId}`)
 }
 
 export function deletePhoto(photoId) {
 	return request(`photos/${photoId}`, { method: "DELETE" })
 }
 
-export function uploadPhoto(hikeId, file, caption = "") {
+export function uploadPhoto(itemType, itemId, file, caption = "") {
 	const formData = new FormData()
-	formData.append("hike_id", hikeId)
+	formData.append("item_type", itemType)
+	formData.append("item_id", itemId)
 	formData.append("file", file)
 	formData.append("caption", caption)
 	return fetch(`${BASE_URL}/photos`, {
