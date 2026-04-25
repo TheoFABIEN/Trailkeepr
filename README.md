@@ -21,12 +21,11 @@ A self-hosted app to archive your outdoor adventures — hikes, climbs, scramble
 
 The only prerequisite is Docker. No API key or external account required.
 
-<code>
+```bash
 git clone https://github.com/TheoFABIEN/My-Outdoor-Archive.git
 cd My-Outdoor-Archive
 docker compose up -d
-</code>
-
+```
 Then open [http://localhost:3000](http://localhost:3000) in your browser. That's it.
 
 ## Data & Privacy
