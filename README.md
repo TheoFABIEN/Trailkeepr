@@ -29,7 +29,7 @@ The only prerequisite is [Docker](https://docs.docker.com/get-started/get-docker
 
 ```bash
 git clone https://github.com/TheoFABIEN/Trailkeepr.git
-cd My-Outdoor-Archive
+cd Trailkeepr
 docker compose up -d
 ```
 
