@@ -1,6 +1,6 @@
 <template>
     <div id="sidebar">
-        <h1>My Outdoor Archive</h1>
+        <img src="/banner-light.svg" alt="Trailkeepr" id="sidebar-banner" />
 
         <div id="upload-gpx">
           <div id="secondary-text-header">Upload your track data and add it to the database.</div>
@@ -100,6 +100,11 @@ function exportFilters() {
 
 
 <style scoped>
+img {
+    max-width: 80%;
+    display: block;
+    margin: 0 auto;
+}
 #sidebar {
     position: absolute;
     top: 0;
