@@ -48,6 +48,16 @@ const editingItem = ref(null)
 const isEditModalOpen = ref(false)
 const pendingJump = ref(null)
 
+// Terrain elevation
+const is3D = ref(false)
+const TERRAIN_SOURCE = {
+  type: "raster-dem",
+  tiles: ["https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png"],
+  tileSize: 256,
+  encoding: "terrarium",
+  maxzoom: 14
+}
+
 // ── Popup state ───────────────────────────────────────────────────
 const popupState = reactive({
   visible: false,
@@ -161,6 +171,27 @@ function initSourcesAndLayers() {
     layout: { "icon-image": "icon-violet", "icon-size": 1, "icon-anchor": "bottom", "icon-allow-overlap": true },
   })
 }
+
+// ── 3D terrain toggle ───────────────────────────────────────────────
+
+function enable3D() {
+  map.setTerrain({ source: "terrain", exaggeration: 1.5 })
+
+  map.easeTo({ pitch: 60, duration: 800 })
+  is3D.value = true
+}
+
+function disable3D() {
+  map.setTerrain(null)
+  map.easeTo({ pitch: 0, bearing: 0, duration: 800 })
+  is3D.value = false
+}
+
+function toggle3D() {
+  is3D.value ? disable3D() : enable3D()
+}
+
+
 
 // ── GeoJSON helpers ───────────────────────────────────────────────
 function pointsToGeoJSON(data) {
@@ -494,17 +525,29 @@ class BasemapControl {
     this._map = null
   }
 
-  _render() {
-    this._container.innerHTML = ""
-    BASEMAPS.forEach((bm) => {
-      const btn = document.createElement("button")
-      btn.textContent = bm.label
-      btn.title = bm.label
-      btn.className = "basemap-btn" + (currentBasemap.value.id === bm.id ? " active" : "")
-      btn.onclick = () => switchBasemap(bm)
-      this._container.appendChild(btn)
-    })
-  }
+_render() {
+  this._container.innerHTML = ""
+
+  BASEMAPS.forEach((bm) => {
+    const btn = document.createElement("button")
+    btn.textContent = bm.label
+    btn.title = bm.label
+    btn.className = "basemap-btn" + (currentBasemap.value.id === bm.id ? " active" : "")
+    btn.onclick = () => switchBasemap(bm)
+    this._container.appendChild(btn)
+  })
+
+  const sep = document.createElement("div")
+  sep.className = "basemap-sep"
+  this._container.appendChild(sep)
+
+  const btn3d = document.createElement("button")
+  btn3d.textContent = "3D"
+  btn3d.title = is3D.value ? "Désactiver le relief 3D" : "Activer le relief 3D"
+  btn3d.className = "basemap-btn" + (is3D.value ? " active" : "")
+  btn3d.onclick = () => { toggle3D(); this.refresh() }
+  this._container.appendChild(btn3d)
+}
 
   refresh() { this._render() }
 }
@@ -552,6 +595,18 @@ onMounted(async () => {
   map.on("style.load", async () => {
     await loadMapIcons()
     initSourcesAndLayers()
+
+    if (!map.getSource("terrain")) {
+      map.addSource("terrain", {
+        type: "raster-dem",
+        tiles: [
+          "https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png"
+        ],
+        tileSize: 256,
+        encoding: "terrarium",
+        maxzoom: 14
+      })
+    }
     setupLayerInteractions()
     trackPopupOnMove()
 
@@ -570,6 +625,10 @@ onMounted(async () => {
     }
 
     basemapControl?.refresh()
+
+    if (is3D.value) {
+      map.setTerrain({ source: "terrain", exaggeration: 1.5 })
+    }
 
     const vis = (v) => (v ? "visible" : "none")
     map.setLayoutProperty("points-layer", "visibility", vis(filterStore.showPointsLayer))
@@ -599,7 +658,7 @@ async function reloadAll() {
 }
 
 function invalidateSize() { if (map) map.resize() }
-defineExpose({ reloadGPX, invalidateSize, flyToResult })
+defineExpose({ reloadGPX, invalidateSize, flyToResult, toggle3D })
 
 // ── Watchers ──────────────────────────────────────────────────────
 watch(
@@ -663,6 +722,12 @@ watch(() => [props.isSidebarOpen, props.isMobile], () => {
     color: #2D5A27;
     font-weight: 600;
   }
+}
+
+.basemap-sep {
+  height: 1px;
+  background: #ddd;
+  margin: 0;
 }
 
 @media (max-width: 768px) {
