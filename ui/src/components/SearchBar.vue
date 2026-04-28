@@ -160,7 +160,7 @@ input {
 
 @media (max-width: 768px) {
   .searchbar-wrapper {
-    top: 8px;
+    top: 16px;
     width: calc(100vw - 80px);
     left: 50%;
     transform: translateX(calc(-50% + 20px));
