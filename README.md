@@ -19,9 +19,7 @@ A self-hosted app to archive your outdoor adventures — hikes, climbs, scramble
 - Find places with the search bar
 - Responsive interface — works on desktop and mobile
 
-<p align="center">
-  <img src="images/Trailkeepr_demo.png" width=600/>
-</p>
+<table><tr><td><img src="images/Trailkeepr_demo.png"></td><td><img src="images/Trailkeepr_demo_3d.png"></td></tr></table>
 
 ## Usage
 
