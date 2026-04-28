@@ -1,43 +1,44 @@
 <template>
-	<div ref="mapContainer" class="map"></div>
-  <EditModal 
-  v-if="isEditModalOpen"
-  :item="editingItem"
-  @close="isEditModalOpen = false"
-  @updated="reloadAll" />
+  <div ref="mapContainer" class="map"></div>
+
+  <MapPopup
+    :visible="popupState.visible"
+    :item="popupState.item"
+    :position="popupState.position"
+    @close="closePopup"
+    @edit="onEdit"
+    @delete="onDelete"
+  />
+
+  <EditModal
+    v-if="isEditModalOpen"
+    :item="editingItem"
+    @close="isEditModalOpen = false"
+    @updated="reloadAll"
+  />
 </template>
 
 <script setup>
-import { ref, onMounted, watch, defineExpose, createApp } from "vue"
-import PhotoGallery from "@/components/PhotoGallery.vue"
-import L from "leaflet"
+import { ref, reactive, onMounted, watch, defineExpose } from "vue"
+import maplibregl from "maplibre-gl"
+import "maplibre-gl/dist/maplibre-gl.css"
+import MapboxDraw from "@mapbox/mapbox-gl-draw"
+import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css"
 
 import { useFilterStore } from "@/stores/useFilters"
 import { drawModeStore } from "@/stores/drawMode"
-import { standardPopup, gpxPopup } from "@/utils/popupTemplate"
-import { orangeIcon, violetIcon, blueIcon } from "@/utils/leafletIcons"
-import {
-  getPoints, getAreas, getGPX, addPoint, addArea, deleteItem
-} from '@/utils/api'
-
-import "leaflet/dist/leaflet.css"
-import "leaflet-control-geocoder"
-import "leaflet-control-geocoder/dist/Control.Geocoder.css"
-import "leaflet-draw/dist/leaflet.draw.css"
-import "leaflet-draw"
+import { getPoints, getAreas, getGPX, addPoint, addArea, deleteItem } from "@/utils/api"
+import MapPopup from "@/components/MapPopup.vue"
 import EditModal from "@/components/EditModal.vue"
 
 const filterStore = useFilterStore()
 const drawStore = drawModeStore()
-
-let drawControl = null
-let drawLayer = null
+const props = defineProps(["isSidebarOpen", "isMobile"])
 
 const mapContainer = ref(null)
 let map = null
-let pointsLayer = null
-let areasLayer = null
-let gpxLayer = null
+let draw = null
+let dataLoaded = false
 
 const points = ref([])
 const areas = ref([])
@@ -45,383 +46,626 @@ const gpx = ref([])
 
 const editingItem = ref(null)
 const isEditModalOpen = ref(false)
+const pendingJump = ref(null)
 
-function locateUser() {
-	if (navigator.geolocation) {
-		navigator.geolocation.getCurrentPosition((position) => {
-			const { latitude, longitude } = position.coords
-			map.setView([latitude, longitude], 9)
-		})
-	} else {
-		alert("The browser does not support geolocation.")
-	}
-}
+// ── Popup state ───────────────────────────────────────────────────
+const popupState = reactive({
+  visible: false,
+  item: {},
+  position: { x: 0, y: 0 },
+  lngLat: null,
+})
 
-function fitMapToData() {
-	const allLayers = []
-	pointsLayer.eachLayer((layer) => allLayers.push(layer))
-	gpxLayer.eachLayer((layer) => allLayers.push(layer))
-	areasLayer.eachLayer((layer) => allLayers.push(layer))
-	if (allLayers.length == 0) {
-		map.setView([45.924, 6.868], 6)
-		return
-	}
-	const group = L.featureGroup(allLayers)
-	map.fitBounds(group.getBounds(), { padding: [50, 50] })
-}
-
-function renderPoints() {
-    pointsLayer.clearLayers()
-    points.value.forEach((point) => {
-        L.marker([point.lat, point.lon], {icon: blueIcon})
-            .bindPopup(standardPopup(point, "points"))
-            .addTo(pointsLayer)
-    })
-}
-function renderAreas() {
-    areasLayer.clearLayers()
-    areas.value.forEach((area) => {
-        const geom = JSON.parse(area.geom)
-        const layer = L.geoJSON(geom, { color: "orange" }).addTo(areasLayer)
-        const center = layer.getBounds().getCenter()
-        L.marker(center, { icon: orangeIcon })
-            .bindPopup(standardPopup(area, "areas"))
-            .addTo(areasLayer)
-    })
-}
-
-function renderGPX() {
-	gpxLayer.clearLayers()
-	gpx.value.forEach((hike) => {
-		const distance = hike.distance_km
-		if (distance == null) return
-		if (!filterStore.isUnlimited && distance > filterStore.maxDistance) return
-		if (filterStore.selectedDifficulty && hike.difficulty != filterStore.selectedDifficulty)
-			return
-		if (filterStore.selectedExposure && String(hike.gaz) !== filterStore.selectedExposure)
-			return
-		const geom = JSON.parse(hike.geom)
-		const line = L.geoJSON(geom, {
-			color: "purple",
-			weight: 4,
-		}).addTo(gpxLayer)
-		const center = line.getBounds().getCenter()
-		L.marker(center, { icon: violetIcon, hikeId: hike.id })
-    .bindPopup(gpxPopup(hike))
-    .addTo(gpxLayer)
-	})
-}
-
-function handleEdit(type, id) {
-  let item = null
-  const numericId = Number(id)
-  if (type === "points") { item = points.value.find(p => p.id == numericId) }
-  if (type === "areas") { item = areas.value.find(a => a.id == numericId) }
-  if (type === "gpx_hikes") { item = gpx.value.find(g => g.id == numericId) }
-  if (item) {
-    editingItem.value = { ...item, type }
-    isEditModalOpen.value = true
+function getPopupPosition(lngLat) {
+  const point = map.project(lngLat)
+  const rect = map.getCanvas().getBoundingClientRect()
+  return {
+    x: rect.left + point.x,
+    y: rect.top + point.y,
   }
+}
+
+function openPopup(properties, lngLat) {
+  popupState.position = getPopupPosition(lngLat)
+  popupState.item = { ...properties }
+  popupState.lngLat = lngLat
+  popupState.visible = true
+  map.flyTo({ center: lngLat })
+}
+
+function trackPopupOnMove() {
+  map.on("move", () => {
+    if (!popupState.visible || !popupState.lngLat) return
+    popupState.position = getPopupPosition(popupState.lngLat)
+  })
+}
+
+function closePopup() { popupState.visible = false }
+
+
+// ── Edit / Delete ─────────────────────────────────────────────────
+function onEdit(item) {
+  editingItem.value = { ...item, type: item.type ?? item.itemType }
+  isEditModalOpen.value = true
+  closePopup()
+}
+
+async function onDelete(item) {
+  if (!confirm("Delete this element ?")) return
+  try {
+    await deleteItem(item.itemType, item.id)
+    if (item.itemType === "points") { points.value = await getPoints(); renderPoints() }
+    if (item.itemType === "areas") { areas.value = await getAreas(); renderAreas() }
+    if (item.itemType === "gpx_hikes") { gpx.value = await getGPX(); renderGPX() }
+    closePopup()
+  } catch (err) { console.error(err) }
+}
+
+// ── Marker icons ────────────────────────────────────────────────────
+
+async function loadMapIcons() {
+  const icons = [
+    { id: "icon-blue",   url: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png" },
+    { id: "icon-violet", url: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png" },
+    { id: "icon-orange", url: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png" },
+  ]
+
+  await Promise.all(
+    icons.map(async ({ id, url }) => {
+      const { data } = await map.loadImage(url)
+      if (map.hasImage(id)) map.removeImage(id)
+      map.addImage(id, data)
+    })
+  )
+}
+
+
+// ── Sources & layers ──────────────────────────────────────────────
+function initSourcesAndLayers() {
+  const empty = { type: "FeatureCollection", features: [] }
+
+  map.addSource("points-source", { type: "geojson", data: empty })
+  map.addLayer({
+    id: "points-layer", type: "symbol", source: "points-source",
+    layout: { "icon-image": "icon-blue", "icon-size": 1, "icon-anchor": "bottom", "icon-allow-overlap": true },
+  })
+
+  map.addSource("areas-source", { type: "geojson", data: empty })
+  map.addLayer({
+    id: "areas-fill", type: "fill", source: "areas-source",
+    filter: ["==", "$type", "Polygon"],
+    paint: { "fill-color": "orange", "fill-opacity": 0.25 },
+  })
+  map.addLayer({
+    id: "areas-outline", type: "line", source: "areas-source",
+    filter: ["==", "$type", "Polygon"],
+    paint: { "line-color": "orange", "line-width": 2 },
+  })
+
+  map.addSource("areas-labels-source", { type: "geojson", data: empty })
+  map.addLayer({
+    id: "areas-markers", type: "symbol", source: "areas-labels-source",
+    layout: { "icon-image": "icon-orange", "icon-size": 1, "icon-anchor": "bottom", "icon-allow-overlap": true },
+  })
+
+  map.addSource("gpx-source", { type: "geojson", data: empty })
+  map.addLayer({
+    id: "gpx-lines", type: "line", source: "gpx-source",
+    filter: ["==", "$type", "LineString"],
+    paint: { "line-color": "#8b5cf6", "line-width": 4 },
+  })
+
+  map.addSource("gpx-labels-source", { type: "geojson", data: empty })
+  map.addLayer({
+    id: "gpx-markers", type: "symbol", source: "gpx-labels-source",
+    layout: { "icon-image": "icon-violet", "icon-size": 1, "icon-anchor": "bottom", "icon-allow-overlap": true },
+  })
+}
+
+// ── GeoJSON helpers ───────────────────────────────────────────────
+function pointsToGeoJSON(data) {
+  return {
+    type: "FeatureCollection",
+    features: data.map((p) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [p.lon, p.lat] },
+      properties: { id: p.id, name: p.name, notes: p.notes, itemType: "points" },
+    })),
+  }
+}
+
+function areasToGeoJSON(data) {
+  return {
+    type: "FeatureCollection",
+    features: data.map((a) => ({
+      type: "Feature",
+      geometry: JSON.parse(a.geom),
+      properties: { id: a.id, name: a.name, notes: a.notes, itemType: "areas" },
+    })),
+  }
+}
+
+function areasCentroidsGeoJSON(data) {
+  return {
+    type: "FeatureCollection",
+    features: data.map((a) => {
+      const coords = JSON.parse(a.geom).coordinates[0]
+      const lng = coords.reduce((s, c) => s + c[0], 0) / coords.length
+      const lat = coords.reduce((s, c) => s + c[1], 0) / coords.length
+      return {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [lng, lat] },
+        properties: { id: a.id, name: a.name, notes: a.notes, itemType: "areas" },
+      }
+    }),
+  }
+}
+
+function gpxFilter(data) {
+  return data.filter((h) => {
+    if (!h.distance_km) return false
+    if (!filterStore.isUnlimited && h.distance_km > filterStore.maxDistance) return false
+    if (filterStore.selectedDifficulty && h.difficulty != filterStore.selectedDifficulty) return false
+    if (filterStore.selectedExposure && String(h.gaz) !== filterStore.selectedExposure) return false
+    return true
+  })
+}
+
+function gpxToGeoJSON(data) {
+  return {
+    type: "FeatureCollection",
+    features: gpxFilter(data).map((h) => ({
+      type: "Feature",
+      geometry: JSON.parse(h.geom),
+      properties: {
+        id: h.id, name: h.name, notes: h.notes, itemType: "gpx_hikes",
+        distance_km: h.distance_km, elevation_gain: h.elevation_gain,
+        elevation_loss: h.elevation_loss, difficulty: h.difficulty, gaz: h.gaz,
+      },
+    })),
+  }
+}
+
+function gpxCentroidsGeoJSON(data) {
+  return {
+    type: "FeatureCollection",
+    features: gpxFilter(data).map((h) => {
+      const coords = JSON.parse(h.geom).coordinates
+      const mid = coords[Math.floor(coords.length / 2)]
+      return {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: mid },
+        properties: {
+          id: h.id, name: h.name, notes: h.notes, itemType: "gpx_hikes",
+          distance_km: h.distance_km, elevation_gain: h.elevation_gain,
+          elevation_loss: h.elevation_loss, difficulty: h.difficulty, gaz: h.gaz,
+        },
+      }
+    }),
+  }
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function renderPoints() { map.getSource("points-source").setData(pointsToGeoJSON(points.value)) }
+function renderAreas() {
+  map.getSource("areas-source").setData(areasToGeoJSON(areas.value))
+  map.getSource("areas-labels-source").setData(areasCentroidsGeoJSON(areas.value))
+}
+function renderGPX() {
+  map.getSource("gpx-source").setData(gpxToGeoJSON(gpx.value))
+  map.getSource("gpx-labels-source").setData(gpxCentroidsGeoJSON(gpx.value))
+}
+
+// ── Interactions layers ───────────────────────────────────────────
+const INTERACTIVE_LAYERS = ["points-layer", "areas-markers", "gpx-markers"]
+
+function setupLayerInteractions() {
+  INTERACTIVE_LAYERS.forEach((layerId) => {
+    map.on("mouseenter", layerId, () => { map.getCanvas().style.cursor = "pointer" })
+    map.on("mouseleave", layerId, () => { map.getCanvas().style.cursor = "" })
+    map.on("click", layerId, (e) => {
+      e.preventDefault()
+      const feature = e.features[0]
+      const coords  = feature.geometry.coordinates
+      const lngLat = new maplibregl.LngLat(coords[0], coords[1])
+      openPopup(e.features[0].properties, lngLat)
+    })
+  })
+  map.on("click", (e) => { if (!e.defaultPrevented) closePopup() })
+}
+
+// ── Draw mode ───────────────────────────────────────────────────
+
+function initDraw() {
+  draw = new MapboxDraw({
+    displayControlsDefault: false,
+    styles: [
+      {
+        id: "gl-draw-polygon-fill",
+        type: "fill",
+        filter: ["all", ["==", "$type", "Polygon"], ["!=", "mode", "static"]],
+        paint: {"fill-color": "orange", "fill-opacity": 0.5}
+      },
+      {
+        id: "gl-draw-polygon-stroke",
+        type: "line",
+        filter: ["all", ["==", "$type", "Polygon"], ["!=", "mode", "static"]],
+        paint: {"line-color": "orange", "line-width": 2}
+      },
+      {
+        id: "gl-draw-polygon-and-line-vertex",
+        type: "circle",
+        filter: ["all", ["==", "meta", "vertex"], ["==", "$type", "Point"]],
+        paint: {"circle-radius": 6, "circle-color": "white", "circle-stroke-color": "orange", "circle-stroke-width": 2,}
+      },
+      {
+        id: "gl-draw-line",
+        type: "line",
+        filter: ["all", ["==", "$type", "LineString"], ["!=", "mode", "static"]],
+        paint: {"line-color": "orange", "line-width": 2, "line-dasharray": [2, 2]}
+      }
+    ]
+  })
+  map.addControl(draw)
+  const layersToPatch = [
+    "gl-draw-lines.cold",
+    "gl-draw-lines.hot",
+    "gl-draw-polygon-stroke.cold",
+    "gl-draw-polygon-stroke.hot",
+  ]
+  layersToPatch.forEach((layerId) => {
+    if (map.getLayer(layerId)) {
+      map.setPaintProperty(layerId, "line-dasharray", [2, 2])
+    }
+  })
+}
+
+async function handleAddPoint(e) {
+  if (e.defaultPrevented) return
+  const { lat, lng } = e.lngLat
+  const name = prompt("Name of this place ?")
+  if (!name) { cancelDraw(); return }
+  const notes = prompt("Notes ?") || ""
+  try {
+    await addPoint({ name, notes, lat, lon: lng })
+    points.value = await getPoints()
+    renderPoints()
+  } catch (err) { console.error(err) }
+  cancelDraw()
+}
+
+async function handleAreaCreated(e) {
+  const geojson = e.features[0]
+  const name = prompt("Name of this area ?")
+  if (!name) { draw.deleteAll(); cancelDraw(); return }
+  const notes = prompt("Notes ?") || ""
+  try {
+    await addArea({ name, notes, geometry: geojson.geometry })
+    areas.value = await getAreas()
+    renderAreas()
+  } catch (err) { console.error(err) }
+  draw.deleteAll()
+  cancelDraw()
+}
+
+function cancelDraw() {
+  map.getCanvas().style.cursor = ""
+  drawStore.objectType = ""
+  map.off("click", handleAddPoint)
+  map.off("draw.create", handleAreaCreated)
+}
+
+watch(
+  () => drawStore.objectType,
+  async (mode) => {
+    if (!map) return
+    map.off("click", handleAddPoint)
+    map.off("draw.create", handleAreaCreated)
+    draw?.deleteAll()
+    draw?.changeMode("simple_select")
+    map.getCanvas().style.cursor = ""
+
+    if (mode === "point") {
+      map.getCanvas().style.cursor = "crosshair"
+      map.once("click", handleAddPoint)
+    }
+
+    if (mode === "area") {
+      map.getCanvas().style.cursor = "crosshair"
+      if (!map.isStyleLoaded()) {
+        await new Promise(resolve => map.once("style.load", resolve))
+      }
+      draw.changeMode("draw_polygon")
+      map.on("draw.create", handleAreaCreated)
+    }
+  }
+)
+
+
+// ── Geolocation ───────────────────────────────────────────────
+function locateUser() {
+  if (!navigator.geolocation) return
+  navigator.geolocation.getCurrentPosition(({ coords }) => {
+    map.flyTo({ center: [coords.longitude, coords.latitude], zoom: 9 })
+  })
+}
+
+// ── fitBounds ─────────────────────────────────────────────────────
+function fitMapToData() {
+  const allCoords = []
+  points.value.forEach((p) => allCoords.push([p.lon, p.lat]))
+  areas.value.forEach((a) => JSON.parse(a.geom).coordinates[0].forEach((c) => allCoords.push(c)))
+  gpx.value.forEach((h) => JSON.parse(h.geom).coordinates.forEach((c) => allCoords.push(c)))
+  if (!allCoords.length) { map.setCenter([6.868, 45.924]); map.setZoom(6); return }
+  const bounds = allCoords.reduce(
+    (b, c) => b.extend(c),
+    new maplibregl.LngLatBounds(allCoords[0], allCoords[0])
+  )
+  map.fitBounds(bounds, { padding: 50 })
+}
+
+// ── flyToResult ─────────────
+function flyToResult({ bbox, center }) {
+  if (bbox) {
+    map.fitBounds(
+      [[bbox[0], bbox[1]], [bbox[2], bbox[3]]],
+      { padding: 40, maxZoom: 14 }
+    )
+  } else {
+    map.flyTo({ center, zoom: 12 })
+  }
+}
+
+// ── Map backgrounds ────────────────────────────────────────────────
+const BASEMAPS = [
+  {
+    id: "osm",
+    label: "🌍",
+    maxZoom: 18,
+    style: {
+      version: 8,
+      sources: {
+        osm: {
+          type: "raster",
+          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+          tileSize: 256,
+          maxzoom: 19,
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        },
+      },
+      layers: [{ id: "osm-layer", type: "raster", source: "osm" }],
+    },
+  },
+  {
+    id: "topo",
+    label: "🗺",
+    maxZoom: 16,
+    style: {
+      version: 8,
+      sources: {
+        topo: {
+          type: "raster",
+          tiles: ["https://tile.opentopomap.org/{z}/{x}/{y}.png"],
+          tileSize: 256,
+          maxzoom: 17,
+          attribution: '© <a href="https://opentopomap.org">OpenTopoMap</a> · © OpenStreetMap contributors',
+        },
+      },
+      layers: [{ id: "topo-layer", type: "raster", source: "topo" }],
+    },
+  },
+  {
+    id: "satellite",
+    label: "🛰",
+    maxZoom: 19,
+    style: {
+      version: 8,
+      sources: {
+        ign: {
+          type: "raster",
+          tiles: [
+            "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
+          ],
+          tileSize: 256,
+          maxzoom: 19,
+          attribution: '© <a href="https://www.ign.fr">IGN Géoportail</a>',
+        },
+      },
+      layers: [{ id: "satellite-layer", type: "raster", source: "ign" }],
+    },
+  },
+]
+
+const currentBasemap = ref(BASEMAPS[0])
+
+
+// ── Map background selector ────────────────────────────────────
+class BasemapControl {
+  onAdd(map) {
+    this._map = map
+    this._container = document.createElement("div")
+    this._container.className = "maplibregl-ctrl maplibregl-ctrl-group basemap-control"
+    this._render()
+    return this._container
+  }
+
+  onRemove() {
+    this._container.parentNode?.removeChild(this._container)
+    this._map = null
+  }
+
+  _render() {
+    this._container.innerHTML = ""
+    BASEMAPS.forEach((bm) => {
+      const btn = document.createElement("button")
+      btn.textContent = bm.label
+      btn.title = bm.label
+      btn.className = "basemap-btn" + (currentBasemap.value.id === bm.id ? " active" : "")
+      btn.onclick = () => switchBasemap(bm)
+      this._container.appendChild(btn)
+    })
+  }
+
+  refresh() { this._render() }
+}
+
+let basemapControl = null
+
+function switchBasemap(bm) {
+  if (currentBasemap.value.id === bm.id) return
+
+  const center = map.getCenter()
+  const zoom = Math.min(map.getZoom(), bm.maxZoom)
+  const bearing = map.getBearing()
+  const pitch = map.getPitch()
+
+  currentBasemap.value = bm
+  map.setMaxZoom(bm.maxZoom)
+  map.setStyle(bm.style)
+  pendingJump.value = { center, zoom, bearing, pitch }
 }
 
 onMounted(async () => {
-  map = L.map(mapContainer.value)
-  map.zoomControl.setPosition("bottomright")
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors",
-  }).addTo(map)
- 
-  map.on("popupopen", (e) => {
-      const marker = e.popup._source
-      if (marker.getLatLng) {
-        map.flyTo(marker.getLatLng(), map.getZoom())
-      }
-      const container = e.popup.getElement()
+  map = new maplibregl.Map({
+    container: mapContainer.value,
+    style: currentBasemap.value.style,
+    center: [6.868, 45.924],
+    zoom: 6,
+    maxZoom: currentBasemap.value.maxZoom,
+    pixelRatio: window.devicePixelRatio || 1,
+  })
 
-      const deleteBtn = container.querySelector(".popup-delete")
-      if (deleteBtn) {
-        deleteBtn.onclick = () => {
-          handleDelete(deleteBtn.dataset.type, deleteBtn.dataset.id)
-        }
-      }
-      const editBtn = container.querySelector(".popup-edit")
-      if (editBtn) {
-        editBtn.onclick = () => {
-          handleEdit(editBtn.dataset.type, editBtn.dataset.id)
-          map.closePopup()
-        }
-      }
-      const galleryTypes = ["gpx_hikes", "points", "areas"]
-      for (const type of galleryTypes) {
-        const btn = container.querySelector(`[data-type="${type}"]`)
-        if (!btn) continue
-        const itemId = parseInt(btn.dataset.id)
-        const mountPoint = container.querySelector(`#photo-gallery-${type}-${itemId}`)
-        if (mountPoint && !mountPoint._galleryMounted) {
-          const galleryApp = createApp(PhotoGallery, { itemType: type, itemId })
-          galleryApp.mount(mountPoint)
-          mountPoint._galleryMounted = true
-        }
-      }
+  map.addControl(new maplibregl.NavigationControl(), "bottom-right")
+  basemapControl = new BasemapControl()
+  map.addControl(basemapControl, "bottom-right")
+
+  initDraw()
+
+  const dataPromise = Promise.all([getPoints(), getAreas(), getGPX()])
+    .then(([p, a, g]) => {
+      points.value = p
+      areas.value = a
+      gpx.value = g
+      dataLoaded = true
+    })
+
+  map.on("style.load", async () => {
+    await loadMapIcons()
+    initSourcesAndLayers()
+    setupLayerInteractions()
+    trackPopupOnMove()
+
+    if (!dataLoaded) await dataPromise
+
+    renderPoints()
+    renderAreas()
+    renderGPX()
+
+    if (pendingJump.value) {
+      const { center, zoom, bearing, pitch } = pendingJump.value
+      map.jumpTo({ center, zoom, bearing, pitch })
+      pendingJump.value = null
+    } else {
+      fitMapToData()
+    }
+
+    basemapControl?.refresh()
+
+    const vis = (v) => (v ? "visible" : "none")
+    map.setLayoutProperty("points-layer", "visibility", vis(filterStore.showPointsLayer))
+    map.setLayoutProperty("areas-fill", "visibility", vis(filterStore.showAreasLayer))
+    map.setLayoutProperty("areas-outline", "visibility", vis(filterStore.showAreasLayer))
+    map.setLayoutProperty("areas-markers", "visibility", vis(filterStore.showAreasLayer))
+    map.setLayoutProperty("gpx-lines", "visibility", vis(filterStore.showGpxLayer))
+    map.setLayoutProperty("gpx-markers", "visibility", vis(filterStore.showGpxLayer))
   })
 
   locateUser()
-
-  L.Control.geocoder({
-    defaultMarkGeocode: false,
-    collapsed: false,
-    placeholder: "Search adventures",
-  })
-    .on("markgeocode", (e) => {
-      map.fitBounds(e.geocode.bbox)
-    })
-    .addTo(map)
-  pointsLayer = L.layerGroup().addTo(map)
-  areasLayer = L.layerGroup().addTo(map)
-  gpxLayer = L.layerGroup().addTo(map)
-  points.value = await getPoints()
-  renderPoints()
-  areas.value = await getAreas()
-  renderAreas()
-  gpx.value = await getGPX()
-  renderGPX()
-  fitMapToData()
 })
 
-async function handleAddPoint(e) {
-  const { lat, lng } = e.latlng
-  const name = prompt("Name of this place?")
-  const notes = prompt("Notes?") || ""
-  try {
-    await addPoint({ name, notes, lat, lon: lng })
-    alert("Point added!")
-    points.value = await getPoints()
-    renderPoints()
-  } catch (err) {
-    console.error(err)
-  }
-  map.off("click", handleAddPoint)
-  map.getContainer().style.cursor = ""
-  drawStore.objectType = ""
-}
 
 
-async function enableDrawArea() {
-  drawLayer = new L.FeatureGroup()
-  map.addLayer(drawLayer)
-  const polygonDrawer = new L.Draw.Polygon(map, {
-    shapeOptions: { color: "orange" }
-  })
-  polygonDrawer.enable()
-  map.off(L.Draw.Event.CREATED)
-  map.on(L.Draw.Event.CREATED, async (e) => {
-    const layer = e.layer
-    drawLayer.addLayer(layer)
-    const geojson = layer.toGeoJSON()
-    const name = prompt("Name of the area?")
-    const notes = prompt("Notes?") || ""
-    try {
-      await addArea({ name, notes, geometry: geojson.geometry })
-      alert("Area added!")
-      areas.value = await getAreas()
-      renderAreas()
-    } catch (err) {
-      console.error(err)
-    }
-    map.removeLayer(drawLayer)
-    map.getContainer().style.cursor = ""
-    drawStore.objectType = ""
-  })
-}
-
-async function handleDelete(type, id) {
-  if (!confirm(`Delete this '${type}' element ?`)) return
-  try {
-    await deleteItem(type, id)
-    alert(`${type} deleted`)
-    if (type === "points") {
-      points.value = await getPoints()
-      renderPoints()
-    }
-    if (type === "areas") {
-      areas.value = await getAreas()
-      renderAreas()
-    }
-    if (type === "gpx_hikes") {
-      gpx.value = await getGPX()
-      renderGPX()
-    }
-  } catch (err) {
-    console.error(err)
-  }
-}
-
+// ── Reload ────────────────────────────────────────────────────────
 async function reloadGPX() {
   gpx.value = await getGPX()
-  renderGPX()
+  if (map?.isStyleLoaded()) renderGPX()
 }
-defineExpose({
-  reloadGPX,
-  invalidateSize
-})
 
 async function reloadAll() {
   points.value = await getPoints()
   areas.value = await getAreas()
   gpx.value = await getGPX()
-
-  renderPoints()
-  renderAreas()
-  renderGPX()
+  if (map?.isStyleLoaded()) { renderPoints(); renderAreas(); renderGPX() }
 }
 
+function invalidateSize() { if (map) map.resize() }
+defineExpose({ reloadGPX, invalidateSize, flyToResult })
+
+// ── Watchers ──────────────────────────────────────────────────────
 watch(
-	() => [filterStore.maxDistance, 
-    filterStore.selectedDifficulty, 
-    filterStore.selectedExposure
-  ],
-	() => { renderGPX() },
+  () => [filterStore.maxDistance, filterStore.selectedDifficulty, filterStore.selectedExposure],
+  () => { if (map?.isStyleLoaded()) renderGPX() }
 )
-
-watch(() => [filterStore.showPointsLayer, filterStore.showAreasLayer, filterStore.showGpxLayer],
-  ([p, a, g]) => {
-    p ? pointsLayer.addTo(map) : map.removeLayer(pointsLayer)
-    a ? areasLayer.addTo(map) : map.removeLayer(areasLayer)
-    g ? gpxLayer.addTo(map) : map.removeLayer(gpxLayer)
-})
-
 watch(
-  () => drawStore.objectType,
-  (mode) => {
-    console.log("DRAW MODE:", mode)
-    if (!map) return
-    map.off("click", handleAddPoint)
-    if (drawControl) {
-      map.removeControl(drawControl)
-      drawControl = null
-    }
-    if (drawLayer) {
-      map.removeLayer(drawLayer)
-      drawLayer = null
-    }
-    if (mode === "point") {
-      map.getContainer().style.cursor = "crosshair"
-      map.on("click", handleAddPoint)
-    }
-    if (mode === "area") {
-      map.getContainer().style.cursor = "crosshair"
-      enableDrawArea()
-    }
+  () => [filterStore.showPointsLayer, filterStore.showAreasLayer, filterStore.showGpxLayer],
+  ([p, a, g]) => {
+    if (!map?.isStyleLoaded()) return
+    const vis = (v) => (v ? "visible" : "none")
+    map.setLayoutProperty("points-layer", "visibility", vis(p))
+    map.setLayoutProperty("areas-fill", "visibility", vis(a))
+    map.setLayoutProperty("areas-outline", "visibility", vis(a))
+    map.setLayoutProperty("areas-markers", "visibility", vis(a))
+    map.setLayoutProperty("gpx-lines", "visibility", vis(g))
+    map.setLayoutProperty("gpx-markers", "visibility", vis(g))
   }
 )
-
-// Elements that make the app responsive:
-
-function invalidateSize() {
-  if (map) map.invalidateSize()
-}
-const props = defineProps(['isSidebarOpen', 'isMobile'])
 watch(() => [props.isSidebarOpen, props.isMobile], () => {
-  const controls = document.querySelectorAll(".leaflet-control-container");
-  controls.forEach(ctrl => {
-    ctrl.style.display = (props.isMobile && props.isSidebarOpen) ? "none" : "";
-  });
+  setTimeout(() => map?.resize(), 200)
 })
 </script>
 
 
 <style>
 .map {
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	left: 250px;
-	right: 0px;
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 250px; right: 0;
 }
-.leaflet-top.leaflet-right {
-	left: 0;
-	right: 0;
-	display: flex;
-	justify-content: center;
+
+.basemap-control {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-bottom: 4px !important;
 }
-.leaflet-control-geocoder {
-	position: absolute !important;
-	top: 20px;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 320px;
-	max-width: 60%;
-	z-index: 1000;
+
+.basemap-btn {
+  width: 100%;
+  padding: 6px 12px;
+  background: white;
+  border: none;
+  border-bottom: 1px solid #ddd;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  color: #333;
+  transition: background 0.15s;
+  text-align: center;
+  &:last-child {
+    border-bottom: none;
+  }
+  &:hover {
+    background: #f0f0f0;
+  }
+  &.active {
+    background: #e8f5e3;
+    color: #2D5A27;
+    font-weight: 600;
+  }
 }
-.leaflet-popup-tip {
-	background: rgba(255, 255, 255, 0) !important;
-	box-shadow: none !important;
-	border: none !important;
-}
-.leaflet-popup:hover .leaflet-popup-content-wrapper{
-	background: rgba(255, 255, 255, 1) !important;
-}
-.leaflet-popup-content-wrapper {
-	background: rgba(255, 255, 255, 0.7) !important;
-	backdrop-filter: blur(3px);
-	transition: background 0.2s ease;
-}
-.leaflet-popup-content {
-	background: transparent !important;
-	position: relative;
-	font-size: 16px;
-}
-.popup-footer {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-top: 6px;
-	font-size: 16px;
-}
-.popup-stats {
-	font-size: 14px;
-	color: #444;
-	padding-right: 30px;
-}
-.popup-delete {
-	position: absolute;
-	bottom: -10px;
-	right: -15px;
-	background: none;
-	border: none;
-	font-size: 14px;
-	opacity: 0.5;
-	cursor: pointer;
-}
-.popup-edit {
-	position: absolute;
-	bottom: -8px;
-	right: 0px;
-	background: none;
-	border: none;
-	font-size: 12px;
-	opacity: 0.5;
-	cursor: pointer;
-}
-.popup-edit:hover .popup-delete:hover{
-  opacity: 1;
-}
+
 @media (max-width: 768px) {
-  .map {
-    left: 0;
-  }
-}
-@media (max-width: 768px) {
-  .leaflet-control-geocoder-icon {
-    display: none !important;
-  }
-  .leaflet-control-geocoder {
-    top: 8px;
-  }
-    .leaflet-control-geocoder-form input {
-    height: 36px;         
-    line-height: 36px;    
-    padding: 0 10px;      
-  }
+  .map { left: 0; }
 }
 </style>

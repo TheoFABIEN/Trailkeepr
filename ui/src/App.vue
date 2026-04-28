@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import Map from "@/components/Map.vue"
 import Sidebar from "@/components/Sidebar.vue"
 import Modal from "@/components/Modal.vue"
+import SearchBar from "@/components/SearchBar.vue"
 
 const isModalOpen = ref(false)
 const isSidebarOpen = ref(false)
@@ -11,9 +12,7 @@ const mapRef = ref(null)
 
 function updateResponsiveMode() {
   isMobile.value = window.matchMedia("(max-width: 768px)").matches
-  if (!isMobile.value) {
-    isSidebarOpen.value = false
-  }
+  if (!isMobile.value) isSidebarOpen.value = false
 }
 onMounted(() => {
   updateResponsiveMode()
@@ -25,35 +24,44 @@ onUnmounted(() => {
 
 function toggleSidebar() {
   isSidebarOpen.value = !isSidebarOpen.value
-  if (!isSidebarOpen.value) {
-    setTimeout(() => {
-      mapRef.value?.invalidateSize()
-    }, 200)
-  }
+  if (!isSidebarOpen.value) setTimeout(() => mapRef.value?.invalidateSize(), 200)
 }
 
 function openModal() { isModalOpen.value = true }
 function closeModal() { isModalOpen.value = false }
 function handleUploaded() { mapRef.value?.reloadGPX() }
+function handleSearch(result) { mapRef.value?.flyToResult(result) }
 </script>
 
 
 <template>
   <div :class="['app-container', { 'mobile-mode': isMobile, 'sidebar-open': isSidebarOpen }]">
-    <button id="mobileToggle" @click="toggleSidebar" v-if="(isMobile && !isModalOpen)">
+    <button id="mobileToggle" @click="toggleSidebar" v-if="isMobile && !isModalOpen">
       {{ isSidebarOpen ? '✕' : '☰' }}
     </button>
-    <Map ref="mapRef" :is-sidebar-open="isSidebarOpen" :is-mobile="isMobile"></Map>
-    <Sidebar 
-      v-show="!isMobile || isSidebarOpen" 
+
+    <Map
+      ref="mapRef"
+      :is-sidebar-open="isSidebarOpen"
+      :is-mobile="isMobile"
+    />
+
+    <SearchBar
+      v-show="!isMobile || !isSidebarOpen"
+      @select="handleSearch"
+    />
+
+    <Sidebar
+      v-show="!isMobile || isSidebarOpen"
       @openModal="openModal"
-    ></Sidebar>
-    <Modal v-if="isModalOpen" @close="closeModal" @uploaded="handleUploaded"></Modal>
+    />
+
+    <Modal v-if="isModalOpen" @close="closeModal" @uploaded="handleUploaded" />
   </div>
 </template>
 
 
-<style>
+<style scoped>
 #mobileToggle {
   position: fixed;
   top: 15px;
