@@ -698,6 +698,10 @@ watch(() => [props.isSidebarOpen, props.isMobile], () => {
   margin-bottom: 4px !important;
 }
 
+.maplibregl-ctrl-bottom-right {
+  z-index: 1500;
+}
+
 .basemap-btn {
   width: 100%;
   padding: 6px 12px;

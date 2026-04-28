@@ -40,7 +40,7 @@ defineEmits(["close", "edit", "delete"])
 <style scoped>
 .map-popup-anchor {
   position: fixed;
-  z-index: 2000;
+  z-index: 500;
   pointer-events: none;
   transform: translate(-50%, calc(-100% - 41px - 8px));
 }
