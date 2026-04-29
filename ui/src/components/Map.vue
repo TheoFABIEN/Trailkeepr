@@ -526,7 +526,7 @@ const BASEMAPS = [
   },
   {
     id: "satellite",
-    label: "🛰",
+    label: "📷",
     maxZoom: 19,
     style: {
       version: 8,

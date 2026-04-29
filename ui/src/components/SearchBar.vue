@@ -93,6 +93,7 @@ onUnmounted(() => document.removeEventListener("mousedown", onClickOutside))
   position: absolute;
   top: 16px;
   left: 50%;
+  padding-left: 300px;
   transform: translateX(-50%);
   width: 320px;
   max-width: calc(100vw - 32px);
@@ -163,6 +164,7 @@ input {
     top: 16px;
     width: calc(100vw - 80px);
     left: 50%;
+    padding-left: 0px;
     transform: translateX(calc(-50% + 20px));
   }
 }
