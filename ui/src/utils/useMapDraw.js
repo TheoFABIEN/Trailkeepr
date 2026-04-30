@@ -1,3 +1,10 @@
+/*
+Helper code for Map.vue
+
+This file contains the code that allows the user to add new points and draw new 
+areas on the map.
+*/
+
 import MapboxDraw from "@mapbox/mapbox-gl-draw"
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css"
 import { watch } from "vue"

@@ -1,9 +1,15 @@
-// ui/src/composables/useMapInteractions.js
-import { ref, reactive, nextTick } from "vue"
+/*
+Helper code for Map.vue
+
+This file contains the code that allow users to interact with elements of the
+map, including everything that handles popups behavior. 
+*/
+
+import { reactive, nextTick } from "vue"
 import maplibregl from "maplibre-gl"
 
 export function useMapInteractions(map, mapPopupRef) {
-	// ── Popup state ─────────────────────────────────────────────────
+
 	const popupState = reactive({
 		visible: false,
 		item: {},
@@ -44,7 +50,6 @@ export function useMapInteractions(map, mapPopupRef) {
 		})
 	}
 
-	// ── Interactions layers ──────────────────────────────────────────
 	const INTERACTIVE_LAYERS = ["points-layer", "areas-markers", "gpx-markers"]
 
 	function setupLayerInteractions() {

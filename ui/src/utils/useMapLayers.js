@@ -1,3 +1,10 @@
+/*
+Helper code for Map.vue
+
+This file contains the code that handles the way layers (points, areas, gpx) are
+displayed.
+*/
+
 import { useFilterStore } from "@/stores/useFilters"
 
 export function useMapLayers(map) {

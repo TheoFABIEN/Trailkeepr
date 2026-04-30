@@ -26,7 +26,7 @@
 
 
 <script setup>
-import { ref, watch, nextTick, defineExpose } from "vue"
+import { ref, defineExpose } from "vue"
 import PhotoGallery from "@/components/PhotoGallery.vue"
 
 const props = defineProps({

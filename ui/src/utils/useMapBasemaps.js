@@ -1,3 +1,10 @@
+/*
+Helper code for Map.vue
+
+This file contains the code necessary to draw and control basemaps used for the 
+project. 
+*/
+
 import { ref } from "vue"
 
 export const BASEMAPS = [
