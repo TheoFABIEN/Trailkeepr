@@ -18,7 +18,11 @@
           <button class="popup-btn" @click="$emit('edit', item)">✏️ Edit</button>
           <button class="popup-btn danger" @click="$emit('delete', item)">🗑 Delete</button>
         </div>
-        <PhotoGallery :itemType="item.itemType" :itemId="item.id" />
+        <PhotoGallery 
+          :key="`${item.itemType}-${item.id}`"
+          :itemType="item.itemType"
+          :itemId="Number(item.id)"
+        />
       </div>
     </div>
   </Teleport>
