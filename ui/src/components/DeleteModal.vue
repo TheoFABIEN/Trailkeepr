@@ -35,6 +35,9 @@ async function submitDelete() {
 .modal {
     z-index: 5000;
 }
+.modal-content {
+    padding: 25px;
+}
 #deleteElement {
     background: #fff;
     color: #D10000;

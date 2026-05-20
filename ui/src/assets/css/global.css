@@ -46,7 +46,7 @@ h3 {
 }
 .modal-content {
     background: white;
-    padding: 25px;
+    padding: 0px 25px 25px 25px;
     border-radius: 8px;
     width: 420px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);

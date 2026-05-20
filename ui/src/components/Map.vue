@@ -11,6 +11,12 @@
     @delete="onDelete"
   />
 
+  <CreateModal
+    v-if="drawStore.pendingFeature"
+    @close="drawStore.pendingFeature = null; drawStore.onConfirm = null"
+    @created="reloadAll"
+  />
+
   <EditModal
     v-if="isEditModalOpen"
     :item="editingItem"
@@ -39,8 +45,12 @@ import { useMapInteractions } from "@/utils/useMapInteractions"
 import { useMapDraw } from "@/utils/useMapDraw"
 import { useMapBasemaps, BASEMAPS } from "@/utils/useMapBasemaps"
 import MapPopup from "@/components/MapPopup.vue"
+import CreateModal from "./CreateModal.vue"
 import EditModal from "@/components/EditModal.vue"
 import DeleteModal from "@/components/DeleteModal.vue"
+
+import { drawModeStore } from "@/stores/drawMode"
+const drawStore = drawModeStore()
 
 const filterStore = useFilterStore()
 const props = defineProps(["isSidebarOpen", "isMobile"])

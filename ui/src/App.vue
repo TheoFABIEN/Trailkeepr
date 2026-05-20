@@ -1,10 +1,12 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import Map from "@/components/Map.vue"
 import Sidebar from "@/components/Sidebar.vue"
 import Modal from "@/components/Modal.vue"
 import SearchBar from "@/components/SearchBar.vue"
+import { drawModeStore } from '@/stores/drawMode'
 
+const drawStore = drawModeStore()
 const isModalOpen = ref(false)
 const isSidebarOpen = ref(false)
 const isMobile = ref(false)
@@ -26,6 +28,12 @@ function toggleSidebar() {
   isSidebarOpen.value = !isSidebarOpen.value
   if (!isSidebarOpen.value) setTimeout(() => mapRef.value?.invalidateSize(), 200)
 }
+
+watch(() => drawStore.objectType, (mode) => {
+  if (mode && isMobile.value) {
+    isSidebarOpen.value = false
+  }
+})
 
 function openModal() { isModalOpen.value = true }
 function closeModal() { isModalOpen.value = false }
