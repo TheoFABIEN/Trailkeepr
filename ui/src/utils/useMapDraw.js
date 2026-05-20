@@ -65,13 +65,54 @@ export function useMapDraw(map, layers, points, areas) {
 		if (e.defaultPrevented) return
 		const { lat, lng } = e.lngLat
 		cancelDraw()
-
 		drawStore.pendingFeature = { lat, lon: lng }
 		drawStore.onConfirm = async (name, notes) => {
 			await addPoint({ name, notes, lat, lon: lng })
 			points.value = await getPoints()
 			layers.value.renderPoints(points.value)
 		}
+	}
+
+	let touchStartPos = null
+
+	function handleTouchStart(e) {
+		touchStartPos =
+			e.touches.length === 1
+				? { x: e.touches[0].clientX, y: e.touches[0].clientY }
+				: null
+	}
+
+	function handleTouchEnd(e) {
+		if (!touchStartPos) return
+		const touch = e.changedTouches[0]
+		const dx = Math.abs(touch.clientX - touchStartPos.x)
+		const dy = Math.abs(touch.clientY - touchStartPos.y)
+		// On ignore si c'est un glissement (pan)
+		if (dx > 8 || dy > 8) return
+
+		// Convertir les coordonnées écran en coordonnées géo
+		const canvas = map.getCanvas()
+		const rect = canvas.getBoundingClientRect()
+		const point = {
+			x: touch.clientX - rect.left,
+			y: touch.clientY - rect.top,
+		}
+		const lngLat = map.unproject(point)
+		handleAddPoint({ defaultPrevented: false, lngLat })
+	}
+
+	function attachPointListeners() {
+		map.once("click", handleAddPoint)
+		map
+			.getCanvas()
+			.addEventListener("touchstart", handleTouchStart, { passive: true })
+		map.getCanvas().addEventListener("touchend", handleTouchEnd)
+	}
+
+	function detachPointListeners() {
+		map.off("click", handleAddPoint)
+		map.getCanvas().removeEventListener("touchstart", handleTouchStart)
+		map.getCanvas().removeEventListener("touchend", handleTouchEnd)
 	}
 
 	async function handleAreaCreated(e) {
@@ -90,7 +131,7 @@ export function useMapDraw(map, layers, points, areas) {
 	function cancelDraw() {
 		map.getCanvas().style.cursor = ""
 		drawStore.objectType = ""
-		map.off("click", handleAddPoint)
+		detachPointListeners()
 		map.off("draw.create", handleAreaCreated)
 	}
 
@@ -98,7 +139,7 @@ export function useMapDraw(map, layers, points, areas) {
 		() => drawStore.objectType,
 		async (mode) => {
 			if (!map) return
-			map.off("click", handleAddPoint)
+			detachPointListeners()
 			map.off("draw.create", handleAreaCreated)
 			draw?.deleteAll()
 			draw?.changeMode("simple_select")
@@ -106,7 +147,7 @@ export function useMapDraw(map, layers, points, areas) {
 
 			if (mode === "point") {
 				map.getCanvas().style.cursor = "crosshair"
-				map.once("click", handleAddPoint)
+				attachPointListeners()
 			}
 			if (mode === "area") {
 				map.getCanvas().style.cursor = "crosshair"
