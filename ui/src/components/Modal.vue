@@ -91,25 +91,11 @@ function close() {
 
 <style scoped>
 .modal {
-    display: flex;
-    position: fixed;
     z-index: 2000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    justify-content: center;
-    align-items: center;
 }
 
 .modal-content {
-    background: white;
-    padding: 25px;
-    border-radius: 8px;
-    width: 420px;
     max-width: 90%;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     gap: 10px;
