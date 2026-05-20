@@ -9,6 +9,7 @@ services:
     volumes:
       - ./data:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d
+    restart: always
 
   api:
     build:
@@ -24,6 +25,7 @@ services:
       - ./uploads:/app/uploads
     depends_on:
       - postgis
+    restart: always
 
   web:
     build:
