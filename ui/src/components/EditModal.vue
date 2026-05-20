@@ -72,10 +72,4 @@ async function submit() {
     padding: 6px;
     font-size: 14px;
 }
-.modal-buttons {
-    margin-top: 10px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
 </style>

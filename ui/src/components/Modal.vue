@@ -109,10 +109,4 @@ function close() {
     font-size: 14px;
 }
 
-.modal-buttons {
-    margin-top: 10px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
 </style>

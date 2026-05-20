@@ -51,6 +51,12 @@ h3 {
     width: 420px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
+.modal-buttons {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
 
 .applyButton {
     width: 100%;

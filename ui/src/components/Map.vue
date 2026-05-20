@@ -17,6 +17,13 @@
     @close="isEditModalOpen = false"
     @updated="reloadAll"
   />
+
+  <DeleteModal
+    v-if="isDeleteModalOpen"
+    :item="deletingItem"
+    @close="isDeleteModalOpen = false"
+    @deleted="reloadAll"
+  />
 </template>
 
 
@@ -26,13 +33,14 @@ import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 
 import { useFilterStore } from "@/stores/useFilters"
-import { getPoints, getAreas, getGPX, deleteItem } from "@/utils/api"
+import { getPoints, getAreas, getGPX } from "@/utils/api"
 import { useMapLayers } from "@/utils/useMapLayers"
 import { useMapInteractions } from "@/utils/useMapInteractions"
 import { useMapDraw } from "@/utils/useMapDraw"
 import { useMapBasemaps, BASEMAPS } from "@/utils/useMapBasemaps"
 import MapPopup from "@/components/MapPopup.vue"
 import EditModal from "@/components/EditModal.vue"
+import DeleteModal from "@/components/DeleteModal.vue"
 
 const filterStore = useFilterStore()
 const props = defineProps(["isSidebarOpen", "isMobile"])
@@ -48,7 +56,9 @@ const areas = ref([])
 const gpx = ref([])
 
 const editingItem = ref(null)
+const deletingItem = ref(null)
 const isEditModalOpen = ref(false)
+const isDeleteModalOpen = ref(false)
 const pendingJump = ref(null)
 const mapPopupRef = ref(null)
 
@@ -65,14 +75,9 @@ function onEdit(item) {
 }
 
 async function onDelete(item) {
-  if (!confirm("Delete this element ?")) return
-  try {
-    await deleteItem(item.itemType, item.id)
-    if (item.itemType === "points") { points.value = await getPoints(); layers.value.renderPoints(points.value) }
-    if (item.itemType === "areas") { areas.value = await getAreas(); layers.value.renderAreas(areas.value) }
-    if (item.itemType === "gpx_hikes") { gpx.value = await getGPX(); layers.value.renderGPX(gpx.value) }
-    interactions.value.closePopup()
-  } catch (err) { console.error(err) }
+  deletingItem.value = { ...item, type: item.type ?? item.itemType }
+  isDeleteModalOpen.value = true
+  interactions.value.closePopup()
 }
 
 // ── 3D terrain ────────────────────────────────────────────────────
