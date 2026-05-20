@@ -21,17 +21,33 @@ A self-hosted app to archive your outdoor adventures — hikes, climbs, scramble
 
 <table><tr><td><img src="images/Trailkeepr_demo.png"></td><td><img src="images/Trailkeepr_demo_3d.png"></td></tr></table>
 
-## Usage
+## Installation
 
 The only prerequisite is [Docker](https://docs.docker.com/get-started/get-docker/). No API key or external account required.
+
+### Stable release (recommended)
+
+Download the latest release source archive from the latest release page:
+
+https://github.com/TheoFABIEN/Trailkeepr/releases/latest
+
+Extract it, open a terminal in the extracted folder and start the app by running:
+
+```bash
+docker compose up -d
+```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser. That's it.
+
+### Latest version
+
+To get the latest changes, clone the repository directly:
 
 ```bash
 git clone https://github.com/TheoFABIEN/Trailkeepr.git
 cd Trailkeepr
 docker compose up -d
 ```
-
-Then open [http://localhost:3000](http://localhost:3000) in your browser. That's it.
 
 ## Configuration (optional)
 
@@ -40,7 +56,7 @@ Then open [http://localhost:3000](http://localhost:3000) in your browser. That's
 By default, the app uses the following credentials to connect to the database:
 
 | Variable            | Default    |
-|---------------------|------------|
+| ------------------- | ---------- |
 | `POSTGRES_USER`     | `postgres` |
 | `POSTGRES_PASSWORD` | `changeme` |
 | `POSTGRES_DB`       | `hiking`   |
@@ -52,6 +68,7 @@ If you really want to use your own credentials, create a `.env` file from the pr
 ```bash
 cp .env.example .env
 ```
+
 Then edit .env with your own values.
 
 > ⚠️ **Credentials must be set before the first `docker compose up -d`.** The database is initialized once on first launch. If you change credentials in `.env` after the database has already been created, the app will fail to connect. To reset, you will need to delete the existing data volume and recreate it:
@@ -63,4 +80,3 @@ Then edit .env with your own values.
 > ```
 >
 > <ins>**This will permanently delete all your archived hikes, points, and photos.**</ins> Make sure to back up anything important before doing this.
-
