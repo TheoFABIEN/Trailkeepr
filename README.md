@@ -80,3 +80,7 @@ Then edit .env with your own values.
 > ```
 >
 > <ins>**This will permanently delete all your archived hikes, points, and photos.**</ins> Make sure to back up anything important before doing this.
+
+## Contributing
+
+Any help or suggestion is welcome ! I’d be happy to hear new ideas or walk you through the project structure if you’d like to contribute.
